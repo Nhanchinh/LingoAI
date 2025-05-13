@@ -51,6 +51,7 @@ dependencies {
     implementation(libs.androidx.material3)
 
     implementation("androidx.navigation:navigation-compose:2.7.5")
+    implementation("br.com.devsrsouza.compose.icons.android:tabler-icons:1.0.0")
 
 
     testImplementation(libs.junit)

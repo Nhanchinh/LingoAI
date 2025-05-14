@@ -2,12 +2,13 @@ package com.example.myapplication.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.MailOutline
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Person
-
+import com.example.myapplication.ui.components.WordCamScreen
 
 
 import androidx.compose.material3.*
@@ -21,6 +22,45 @@ import com.example.myapplication.ui.components.LogoutButton
 import com.example.myapplication.ui.components.UserHeader
 import com.example.myapplication.ui.components.UserInfoSection
 
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.example.myapplication.R
+
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.unit.dp
+import com.example.myapplication.ui.components.TopicDropdown
+import com.example.myapplication.ui.components.VocabularyList
+import kotlinx.coroutines.launch
+
+import android.graphics.Bitmap
+import android.provider.MediaStore
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+
+
+
+
 @Composable
 fun HomeScreen() {
     var selectedIndex by remember { mutableStateOf(0) }
@@ -29,6 +69,7 @@ fun HomeScreen() {
         BottomNavItem("Từ vựng", Icons.Default.Star),
         BottomNavItem("Hội thoại", Icons.Default.MailOutline),
         BottomNavItem("Word Cam", Icons.Default.Search),
+        BottomNavItem("Tiny Lesson", Icons.Default.CheckCircle), // cần thêm icon mới
         BottomNavItem("User", Icons.Default.Person)
     )
 
@@ -51,7 +92,8 @@ fun HomeScreen() {
                 0 -> VocabularyScreen()
                 1 -> ConversationScreen()
                 2 -> WordCamScreen()
-                3 -> UserScreen()
+                3 -> TinyLessonScreen()
+                4 -> UserScreen()
             }
         }
     }
@@ -73,12 +115,49 @@ fun ConversationScreen() {
     }
 }
 
+
+
+
+
 @Composable
-fun WordCamScreen() {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Word Cam: Nhận diện vật và hiện từ", style = MaterialTheme.typography.headlineSmall)
+fun TinyLessonScreen() {
+    val lessonData = mapOf(
+        "Hẹn hò lần đầu" to listOf("Xin chào", "Bạn có khỏe không?", "Rất vui được gặp bạn"),
+        "Bắt taxi" to listOf("Tôi muốn đến...", "Giá bao nhiêu?", "Dừng ở đây nhé"),
+        "Mua sắm" to listOf("Cái này bao nhiêu tiền?", "Tôi muốn mua cái này", "Có giảm giá không?"),
+        "Nhà hàng" to listOf("Cho tôi thực đơn", "Tôi muốn gọi món", "Tính tiền giúp tôi"),
+        "Sân bay" to listOf("Cổng ra máy bay ở đâu?", "Tôi muốn check-in", "Hành lý của tôi đâu?"),
+        "Khách sạn" to listOf("Tôi muốn đặt phòng", "Phòng có bao gồm bữa sáng không?", "Khi nào trả phòng?")
+    )
+
+    var selectedTopic by remember { mutableStateOf(lessonData.keys.first()) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            "🎓 Tiny Lessons",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        TopicDropdown(
+            topics = lessonData.keys.toList(),
+            selectedTopic = selectedTopic,
+            onTopicSelected = { selectedTopic = it }
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        lessonData[selectedTopic]?.let {
+            VocabularyList(vocabulary = it)
+        }
     }
 }
+
+
 
 @Composable
 fun UserScreen() {

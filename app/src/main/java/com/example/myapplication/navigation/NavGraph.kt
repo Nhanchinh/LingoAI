@@ -175,7 +175,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.myapplication.ui.screens.*
 import com.example.myapplication.ui.components.*
+import com.example.myapplication.ui.visionaryword.VisionaryWordsScreen
 
+//import com.example.myapplication.ui.common.BottonNav
 object Routes {
     // Auth routes
     const val SPLASH = "splash"
@@ -302,7 +304,8 @@ fun AppNavGraph(
 
         // Visionary Words flow
         composable(Routes.VISIONARY_WORDS) {
-            VisionaryWelcomeScreen(
+            VisionaryWordsScreen(
+                onBack = {navController.popBackStack()},
                 onOpenCamera = {
                     // Navigation to camera screen
                 },

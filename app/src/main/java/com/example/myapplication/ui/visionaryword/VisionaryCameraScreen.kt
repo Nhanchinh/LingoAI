@@ -1,6 +1,9 @@
 package com.example.myapplication.ui.components
 
+import android.Manifest
 import android.graphics.Bitmap
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,35 +13,77 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 
 @Composable
 fun VisionaryCameraScreen(onPhotoTaken: (Bitmap) -> Unit) {
-    Column(
+    val context = LocalContext.current
+    var hasCameraPermission by remember { mutableStateOf(false) }
+
+    // Xử lý quyền camera
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        hasCameraPermission = isGranted
+    }
+
+    // Xử lý chụp ảnh
+    val cameraLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            onPhotoTaken(it)
+        }
+    }
+
+    // Yêu cầu quyền khi màn hình hiển thị
+    LaunchedEffect(Unit) {
+        cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+    }
+
+    // UI cho màn hình camera
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8CFEA)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(Color.Black)
     ) {
-        Box(
-            modifier = Modifier
-                .size(250.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFFD6EAF8))
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // TODO: Hiển thị preview camera ở đây
+            if (hasCameraPermission) {
+                // Mở camera ngay khi có quyền
+                LaunchedEffect(hasCameraPermission) {
+                    cameraLauncher.launch(null)
+                }
+
+                // Hiển thị thông báo đang chụp
+                Text(
+                    "Taking photo...",
+                    color = Color.White,
+                    fontSize = 20.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                CircularProgressIndicator(color = Color.White)
+            } else {
+                // Yêu cầu quyền camera nếu chưa được cấp
+                Text(
+                    "Camera permission is required",
+                    color = Color.White,
+                    fontSize = 20.sp
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = {
+                    cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+                }) {
+                    Text("Grant Permission")
+                }
+            }
         }
-        Spacer(modifier = Modifier.height(32.dp))
-        Button(
-            onClick = {
-                // TODO: Chụp ảnh thật, ở đây giả lập bằng ảnh mẫu
-                // onPhotoTaken(bitmap)
-            },
-            shape = RoundedCornerShape(50),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E86C1)),
-            modifier = Modifier.size(64.dp)
-        ) {}
     }
 }

@@ -15,53 +15,102 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 
-
 @Composable
-fun VisionaryResultScreen(image: Bitmap?, onRetake: () -> Unit) {
-    Column(
+fun VisionaryResultScreen(
+    image: Bitmap?,
+    onRetake: () -> Unit,
+    onNavItemSelected: (String) -> Unit = {}
+) {
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8CFEA)),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+            .background(Color(0xFFF8CFEA))
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(
-            "Visionary Words",
-            fontSize = 28.sp,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        image?.let {
-            Image(
-                bitmap = it.asImageBitmap(),
-                contentDescription = null,
-                modifier = Modifier
-                    .size(250.dp)
-                    .clip(RoundedCornerShape(16.dp))
-            )
-            // TODO: Vẽ bounding box và label lên ảnh
-        }
-        Spacer(modifier = Modifier.height(24.dp))
-        Button(
-            onClick = onRetake,
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE48ED4)),
-            shape = RoundedCornerShape(20.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 80.dp, top = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Retake photo")
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(painterResource(id = R.drawable.ic_camera), contentDescription = null)
+            Text(
+                "Photo Result",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+
+            // Hiển thị ảnh đã chụp
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .aspectRatio(4/3f)
+                    .background(Color.LightGray, RoundedCornerShape(16.dp))
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (image != null) {
+                    Image(
+                        bitmap = image.asImageBitmap(),
+                        contentDescription = "Captured photo",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
+                    )
+                } else {
+                    Text("No image captured", color = Color.Gray)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Kết quả phân tích (mô phỏng)
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.9f)
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text("Detected Word", fontWeight = FontWeight.Bold)
+                    Text("Book (Sách)", fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp))
+                    Text("Pronunciation: /bʊk/")
+                    Text("A written or printed work consisting of pages.")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Nút chụp lại
+            Button(
+                onClick = onRetake,
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE48ED4)),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(50.dp)
+            ) {
+                Icon(
+                    painterResource(id = R.drawable.ic_camera),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Take another photo", fontSize = 18.sp)
+            }
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            "Chọn 1 vật trong hình nếu bạn muốn học nhiều hơn",
-            fontSize = 16.sp
+
+        // Navbar ở cuối màn hình
+        BottomNavBar(
+            currentRoute = "visionary_words",
+            onNavItemSelected = onNavItemSelected,
+            modifier = Modifier.align(Alignment.BottomCenter)
         )
     }
 }

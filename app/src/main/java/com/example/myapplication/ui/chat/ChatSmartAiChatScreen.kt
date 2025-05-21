@@ -93,11 +93,15 @@ fun ChatSmartAiChatScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp),
+                    .padding(top = 40.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(32.dp))
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back",
+                        modifier = Modifier.size(32.dp)
+                           // .padding(top =40.dp)
+
+                    )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(

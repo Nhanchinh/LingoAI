@@ -51,6 +51,7 @@ fun SplashScreenUI() {
             verticalArrangement = Arrangement.spacedBy(0.dp) // hoặc 0.dp
         ) {
             Image(
+
                 painter = painterResource(id = R.drawable.sheep_logo),
                 contentDescription = "Splash Logo",
                 modifier = Modifier.size(160.dp)

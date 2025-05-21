@@ -102,6 +102,7 @@ fun ChatSmartAiWelcomeScreen(
     ) {
         Column(
             modifier = Modifier
+
                 .fillMaxSize()
                 .padding( 16.dp, bottom = 80.dp), // Thêm padding bottom để chừa chỗ cho navbar
             horizontalAlignment = Alignment.CenterHorizontally
@@ -110,7 +111,7 @@ fun ChatSmartAiWelcomeScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 24.dp),
+                    .padding(top = 40.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {

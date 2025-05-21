@@ -46,9 +46,12 @@ fun WordGenieScreen(
             onClick = onBack,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(16.dp)
+                .padding(start = 16.dp, top = 40.dp)
         ) {
-            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+            Icon(Icons.Default.ArrowBack, contentDescription = "Back",
+                modifier = Modifier.size(32.dp)
+
+                )
         }
 
         // Nội dung chính

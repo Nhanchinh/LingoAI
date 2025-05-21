@@ -1,5 +1,5 @@
-package com.example.myapplication.ui.components
-
+//package com.example.myapplication.ui.components
+package com.example.myapplication.ui.visionaryword
 
 // app/src/main/java/com/example/myapplication/ui/screens/VisionaryWordsScreen.kt
 
@@ -9,6 +9,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 
@@ -25,18 +27,31 @@ import androidx.compose.ui.Alignment
 
 
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.myapplication.ui.components.BottomNavBar
+import com.example.myapplication.ui.components.VisionaryCameraScreen
+import com.example.myapplication.ui.components.VisionaryResultScreen
 
 
 enum class VisionaryStep { Welcome, Camera, Result }
 
+
+
+
+
 @Composable
-fun VisionaryWordsScreen() {
+fun VisionaryWordsScreen(
+    onNavItemSelected: (String) -> Unit = {},
+    onBack: () -> Unit = {},
+    onOpenCamera: () -> Unit
+) {
     var step by remember { mutableStateOf(VisionaryStep.Welcome) }
     var capturedImage by remember { mutableStateOf<Bitmap?>(null) }
 
     when (step) {
         VisionaryStep.Welcome -> VisionaryWelcomeScreen(
-            onOpenCamera = { step = VisionaryStep.Camera }
+            onOpenCamera = { step = VisionaryStep.Camera },
+            onNavItemSelected = onNavItemSelected,
+            onBack = onBack
         )
         VisionaryStep.Camera -> VisionaryCameraScreen(
             onPhotoTaken = { bitmap ->
@@ -46,20 +61,33 @@ fun VisionaryWordsScreen() {
         )
         VisionaryStep.Result -> VisionaryResultScreen(
             image = capturedImage,
-            onRetake = { step = VisionaryStep.Camera }
+            onRetake = { step = VisionaryStep.Camera },
+            onNavItemSelected = onNavItemSelected
         )
     }
 }
 @Composable
 fun VisionaryWelcomeScreen(
     onOpenCamera: () -> Unit,
-    onNavItemSelected: (String) -> Unit = {}
+    onNavItemSelected: (String) -> Unit = {},
+    onBack: () -> Unit = {},
 ) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF8CFEA))
     ) {
+        Column(
+            modifier = Modifier
+                .padding(start = 16.dp,top = 40.dp )
+
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(32.dp))
+            }
+        }
+
+
         // Nội dung chính ở trong Column
         Column(
             modifier = Modifier
@@ -68,6 +96,8 @@ fun VisionaryWelcomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+
+
             Image(
                 painter = painterResource(id = R.drawable.sheep_camera),
                 contentDescription = null,

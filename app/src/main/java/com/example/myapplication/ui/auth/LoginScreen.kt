@@ -23,7 +23,7 @@ import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.ui.theme.Pink80
 
 import com.example.myapplication.ui.theme.AppText
-
+import com.example.myapplication.ui.common.KeyboardDismissWrapper
 
 @Composable
 fun LoginScreen(
@@ -34,88 +34,95 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MainColor)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.sheep_logo),
-            contentDescription = "Splash Logo",
-            modifier = Modifier.size(160.dp)
-        )
-        Image(
-            painter = painterResource(id = R.drawable.lingo_ai),
-            contentDescription = null,
-            modifier = Modifier.size(100.dp)
-        )
+    KeyboardDismissWrapper {
 
-        OutlinedTextField(
-            value = username,
-            onValueChange = {
-                username = it
-                error = false
-            },
-            label = { Text("Username") },
-            shape = RoundedCornerShape(12.dp),
 
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = {
-                password = it
-                error = false
-            }
-            ,
-            label = { Text("Password") },
-            visualTransformation = PasswordVisualTransformation(),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
-
-        if (error) {
-            Text("Sai tài khoản hoặc mật khẩu", color = MaterialTheme.colorScheme.error)
-        }
-
-        Button(
-            onClick = {
-                if (username == "admin" && password == "123") {
-                    onLoginSuccess()
-                } else {
-                    error = true
-                }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(75.dp)
-                .padding(vertical = 12.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = Pink80,
-                contentColor = AppText
-            )
+                .fillMaxSize()
+                .background(MainColor)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text("Đăng nhập")
+            Image(
+                painter = painterResource(id = R.drawable.sheep_logo),
+                contentDescription = "Splash Logo",
+                modifier = Modifier.size(160.dp)
+            )
+            Image(
+                painter = painterResource(id = R.drawable.lingo_ai),
+                contentDescription = null,
+                modifier = Modifier.size(100.dp)
+            )
+
+            OutlinedTextField(
+                value = username,
+                onValueChange = {
+                    username = it
+                    error = false
+                },
+                label = { Text("Username") },
+                shape = RoundedCornerShape(12.dp),
+
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = {
+                    password = it
+                    error = false
+                }
+                ,
+                label = { Text("Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
+
+            if (error) {
+                Text("Sai tài khoản hoặc mật khẩu", color = MaterialTheme.colorScheme.error)
+            }
+
+            Button(
+                onClick = {
+                    if (username == "admin" && password == "123") {
+                        onLoginSuccess()
+                    } else {
+                        error = true
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(75.dp)
+                    .padding(vertical = 12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Pink80,
+                    contentColor = AppText
+                )
+            ) {
+                Text("Đăng nhập")
+            }
+
+            Text(
+                text = "Bạn chưa có tài khoản? Đăng ký",
+                modifier = Modifier
+                    .clickable { onNavigateToRegister() }
+                    .padding(top = 16.dp),
+                textAlign = TextAlign.Center,
+                color = AppText,
+                textDecoration = TextDecoration.Underline
+            )
         }
 
-        Text(
-            text = "Bạn chưa có tài khoản? Đăng ký",
-            modifier = Modifier
-                .clickable { onNavigateToRegister() }
-                .padding(top = 16.dp),
-            textAlign = TextAlign.Center,
-            color = AppText,
-            textDecoration = TextDecoration.Underline
-        )
+
     }
+
 }
 
 

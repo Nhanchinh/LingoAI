@@ -58,6 +58,11 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("br.com.devsrsouza.compose.icons.android:tabler-icons:1.0.0")
 
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.squareup.moshi:moshi:1.15.0") // hoặc Gson nếu bạn thích
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    implementation("io.coil-kt:coil-compose:2.3.0")
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

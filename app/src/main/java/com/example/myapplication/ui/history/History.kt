@@ -1,6 +1,7 @@
 
-package com.example.myapplication.ui.screens
+package com.example.myapplication.ui.history
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -8,29 +9,78 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
-import com.example.myapplication.ui.components.BottomNavBar
+import com.example.myapplication.api.ApiService
+import com.example.myapplication.ui.common.BottomNavBar
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit = {},
-    historyList: List<HistoryItem> = listOf(
-        HistoryItem("Attractive", "/əˈtræktɪv/", "Thu hút"),
-        HistoryItem("Attractive", "/əˈtræktɪv/", "Thu hút"),
-        HistoryItem("Attractive", "/əˈtræktɪv/", "Thu hút")
-    ),
     onBottomNavClicked: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var historyList by remember { mutableStateOf<List<HistoryItem>>(emptyList()) }
+
+//    // Gán dữ liệu giả lập để test UI
+//    LaunchedEffect(Unit) {
+//        historyList = listOf(
+//            HistoryItem("apple", "/ˈæpəl/", "a round fruit with red or green skin"),
+//            HistoryItem("banana", "/bəˈnænə/", "a long curved fruit with a yellow skin"),
+//            HistoryItem("cat", "/kæt/", "a small domesticated carnivorous mammal"),
+//            HistoryItem("dog", "/dɔg/", "a domesticated carnivorous mammal that typically has a long snout"),
+//            HistoryItem("elephant", "/ˈɛləfənt/", "a large herbivorous mammal with a trunk")
+//        )
+//    }
+    // Gọi API khi Composable được tạo
+    LaunchedEffect(Unit) {
+        ApiService.getVocabularyList { code, body ->
+            if (code == 200 && body != null) {
+                try {
+                    val json = JSONObject(body)
+                    val dataArray = json.getJSONArray("data")
+                    val list = mutableListOf<HistoryItem>()
+                    for (i in 0 until dataArray.length()) {
+                        val item = dataArray.getJSONObject(i)
+                        list.add(
+                            HistoryItem(
+                                word = item.optString("word"),
+                                phonetic = "/" + item.optString("ipa") + "/",
+                                meaning = item.optString("meaning")
+                            )
+                        )
+                    }
+                    historyList = list
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            } else {
+                coroutineScope.launch {
+                    Toast.makeText(context, "Không thể tải danh sách từ vựng", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -39,10 +89,9 @@ fun HistoryScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = 80.dp), // chừa chỗ cho bottom bar
+                .padding(bottom = 80.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Back icon
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -59,7 +108,6 @@ fun HistoryScreen(
                 }
             }
 
-            // Ảnh cừu
             Image(
                 painter = painterResource(id = R.drawable.sheep_reading),
                 contentDescription = null,
@@ -68,7 +116,6 @@ fun HistoryScreen(
                     .padding(top = 0.dp, bottom = 8.dp)
             )
 
-            // Tiêu đề
             Text(
                 "History",
                 fontSize = 36.sp,
@@ -77,7 +124,6 @@ fun HistoryScreen(
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
-            // Danh sách lịch sử
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -85,12 +131,26 @@ fun HistoryScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 items(historyList.size) { idx ->
-                    HistoryItemCard(historyList[idx])
+                    val item = historyList[idx]
+                    HistoryItemCard(
+                        item = item,
+                        onDelete = { wordToDelete ->
+                            ApiService.deleteVocabulary(wordToDelete) { code, _ ->
+                                if (code == 200) {
+                                    // Cập nhật danh sách sau khi xóa
+                                    historyList = historyList.filter { it.word != wordToDelete }
+                                } else {
+                                    coroutineScope.launch {
+                                        Toast.makeText(context, "Xóa thất bại", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }
 
-        // Đặt BottomNavBar ở đây, bên trong Box nhưng bên ngoài Column
         BottomNavBar(
             currentRoute = "history",
             onNavItemSelected = onBottomNavClicked,
@@ -100,27 +160,39 @@ fun HistoryScreen(
 }
 
 data class HistoryItem(val word: String, val phonetic: String, val meaning: String)
-
 @Composable
-fun HistoryItemCard(item: HistoryItem) {
-    // Đơn giản hóa thành chỉ một Column
-    Column(
+fun HistoryItemCard(item: HistoryItem, onDelete: (String) -> Unit) {
+    Row(
         modifier = Modifier
-            .fillMaxWidth() // Chỉ chiếm toàn bộ chiều rộng
+            .fillMaxWidth()
             .background(Color(0xFFD9D9D9), shape = RoundedCornerShape(20.dp))
-            .padding(16.dp)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            "${item.word} ${item.phonetic}",
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Medium,
-            color = Color.Black
-        )
-        Text(
-            item.meaning,
-            fontSize = 16.sp,
-            color = Color.Black
-        )
+        Column(
+            modifier = Modifier.weight(1f) // chiếm phần lớn chiều rộng
+        ) {
+            Text(
+                "${item.word} ${item.phonetic}",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black
+            )
+            Text(
+                item.meaning,
+                fontSize = 16.sp,
+                color = Color.Black
+            )
+        }
+
+        IconButton(
+            onClick = { onDelete(item.word) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.Delete,
+                contentDescription = "Delete"
+            )
+        }
     }
 }
 
@@ -128,10 +200,5 @@ fun HistoryItemCard(item: HistoryItem) {
 @Composable
 fun PreviewHistoryScreen() {
     HistoryScreen(
-        historyList = listOf(
-            HistoryItem("Attractive", "/əˈtræktɪv/", "Thu hút"),
-            HistoryItem("Beautiful", "/ˈbjuː.tɪ.fəl/", "Đẹp"),
-            HistoryItem("Gorgeous", "/ˈɡɔː.dʒəs/", "Lộng lẫy")
-        )
     )
 }

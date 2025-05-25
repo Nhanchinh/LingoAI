@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screens
+package com.example.myapplication.ui.wordgenie
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -19,13 +19,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
 
 
-import androidx.compose.ui.tooling.preview.Preview
+import com.example.myapplication.api.ApiService
+import org.json.JSONObject
 
 
 data class WordDetail(
@@ -44,13 +46,45 @@ data class WordItem(
     val meaning: String
 )
 
-
 @Composable
 fun WordDetailScreen(
-    wordDetail: WordDetail,
+    word: String,
     onBack: () -> Unit = {},
     onPlayAudio: (String) -> Unit = {},
     onSave: (String) -> Unit = {}
+) {
+    var wordDetail by remember { mutableStateOf<WordDetail?>(null) }
+
+    LaunchedEffect(word) {
+        ApiService.getRelatedWords(word) { code, body ->
+            if (code == 200 && body != null) {
+                val detail = parseWordDetailFromJson(body, word, onBackPressed = { false })
+                wordDetail = detail
+            }
+        }
+    }
+
+    if (wordDetail == null) {
+        // Show loading
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else {
+        WordDetailContent(
+            wordDetail = wordDetail!!,
+            onBack = onBack,
+            onPlayAudio = onPlayAudio,
+            onSave = onSave
+        )
+    }
+}
+
+@Composable
+fun WordDetailContent(
+    wordDetail: WordDetail,
+    onBack: () -> Unit,
+    onPlayAudio: (String) -> Unit,
+    onSave: (String) -> Unit
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     val tabTitles = listOf("Synonyms", "Antonyms", "Phrases")
@@ -185,12 +219,44 @@ fun WordItemRow(
                 Icon(Icons.Default.Face, contentDescription = "Play audio")
             }
             IconButton(onClick = { onSave(item.word) }) {
-                Icon(Icons.Default.DateRange, contentDescription = "Save")
+                Icon(Icons.Default.AddCircle, contentDescription = "Save")
             }
         }
     }
 }
 
+fun parseWordDetailFromJson(
+    jsonStr: String,
+    word: String,
+    onBackPressed: () -> Boolean = { true } // Mặc định trả về true hoặc do bạn định nghĩa
+) : WordDetail {
+    val json = JSONObject(jsonStr)
+
+    val phonetic = json.optString("phonetic", "")
+    val meaning = json.optString("meaning", "")
+
+    fun parseList(key: String): List<WordItem> {
+        val array = json.optJSONArray(key) ?: return emptyList()
+        return List(array.length()) { i ->
+            val obj = array.getJSONObject(i)
+            WordItem(
+                word = obj.optString("word", ""),
+                phonetic = obj.optString("phonetic", ""),
+                meaning = obj.optString("meaning", "")
+            )
+        }
+    }
+
+    return WordDetail(
+        word = word,
+        phonetic = phonetic,
+        meaning = meaning,
+        synonyms = parseList("synonyms"),
+        antonyms = parseList("antonyms"),
+        phrases = parseList("phrases"),
+        onBackPressed = onBackPressed
+    )
+}
 
 
 //

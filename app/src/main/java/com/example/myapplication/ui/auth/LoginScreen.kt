@@ -1,11 +1,11 @@
 package com.example.myapplication.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.material3.TextFieldDefaults
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,12 +18,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import com.example.myapplication.R
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import com.example.myapplication.api.ApiService
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.ui.theme.Pink80
 
 import com.example.myapplication.ui.theme.AppText
 import com.example.myapplication.ui.common.KeyboardDismissWrapper
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 @Composable
 fun LoginScreen(
@@ -33,6 +36,8 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var error by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     KeyboardDismissWrapper {
 
@@ -91,10 +96,24 @@ fun LoginScreen(
 
             Button(
                 onClick = {
-                    if (username == "admin" && password == "123") {
-                        onLoginSuccess()
-                    } else {
-                        error = true
+                    ApiService.loginUser(username, password) { statusCode, responseJson ->
+                        coroutineScope.launch {
+                            if (statusCode == 200 && responseJson != null) {
+                                val jsonObject = JSONObject(responseJson)
+                                val userId = jsonObject.optString("user_id")
+                                Toast.makeText(context, "Login thành công!", Toast.LENGTH_SHORT).show()
+                                ApiService.setUserId(userId)
+                                onLoginSuccess()
+                            } else {
+                                val errorMsg = try {
+                                    JSONObject(responseJson ?: "").optString("error", "Đăng nhập thất bại")
+                                } catch (e: Exception) {
+                                    "Đăng nhập thất bại (lỗi bất định)"
+                                }
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                                error = true
+                            }
+                        }
                     }
                 },
                 modifier = Modifier

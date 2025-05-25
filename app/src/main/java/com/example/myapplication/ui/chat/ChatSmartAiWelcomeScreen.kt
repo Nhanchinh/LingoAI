@@ -1,85 +1,42 @@
-package com.example.myapplication.ui.components
+package com.example.myapplication.ui.chat
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
 
-
-
-
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.MailOutline
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Person
-import com.example.myapplication.ui.components.WordCamScreen
-
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.components.LearningProgressSection
-import com.example.myapplication.ui.components.LogoutButton
-import com.example.myapplication.ui.components.UserHeader
-import com.example.myapplication.ui.components.UserInfoSection
-
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.components.TopicDropdown
-import com.example.myapplication.ui.components.VocabularyList
-import kotlinx.coroutines.launch
-
-import android.graphics.Bitmap
-import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 
-
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.theme.MainColor
+import androidx.core.content.ContextCompat
+import com.example.myapplication.ui.common.BottomNavBar
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 data class ChatMessage(
@@ -92,9 +49,35 @@ data class ChatMessage(
 @Composable
 fun ChatSmartAiWelcomeScreen(
     onBack: () -> Unit = {},
-    onRecord: () -> Unit = {},
+    onRecordStart: () -> Unit = {},
+    onRecordStop: (((String) -> Unit) -> Unit) = {},  // 👈 kiểu có nhận callback
+    onNavigate: (Any?) -> Unit = {},
     onNavItemSelected: (String) -> Unit = {} // Thêm tham số này
 ) {
+    val context = LocalContext.current
+    val isRecording = remember { mutableStateOf(false) }
+
+    // Khai báo launcher để request quyền
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // Quyền đã được cấp, có thể ghi âm
+            onRecordStart()
+        } else {
+            // Quyền bị từ chối
+            Log.d("Permissions", "Permission denied")
+        }
+    }
+
+    Log.d("testt", "on chat")
+
+    if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+        Log.d("Permissions", "Permission checkSelfPermission")
+        // Yêu cầu cấp quyền
+        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -151,11 +134,30 @@ fun ChatSmartAiWelcomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Icon mic
-            IconButton(
-                onClick = onRecord,
+            Box(
                 modifier = Modifier
                     .size(56.dp)
                     .background(Color(0xFFD9D9D9), shape = RoundedCornerShape(28.dp))
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onPress = {
+                                isRecording.value = true
+                                onRecordStart()
+                                // Chờ người dùng thả tay
+                                tryAwaitRelease()
+
+                                isRecording.value = false
+                                onRecordStop { transcription ->
+                                    Log.d("Transcription", transcription)
+                                    // Chuyển sang main thread để điều hướng
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        onNavigate(transcription) // bên trong navigate()
+                                    }
+                                }
+                            }
+                        )
+                    },
+                contentAlignment = Alignment.Center
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.ic_mic),
@@ -163,6 +165,7 @@ fun ChatSmartAiWelcomeScreen(
                     modifier = Modifier.size(32.dp)
                 )
             }
+
 
             Spacer(modifier = Modifier.weight(1f))
         }

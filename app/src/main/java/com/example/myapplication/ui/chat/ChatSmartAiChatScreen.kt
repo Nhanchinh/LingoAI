@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.components
 
+import android.util.Log
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.text.font.FontFamily
@@ -9,76 +10,72 @@ import androidx.compose.ui.unit.sp
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.MailOutline
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Person
-import com.example.myapplication.ui.components.WordCamScreen
-
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.components.LearningProgressSection
-import com.example.myapplication.ui.components.LogoutButton
-import com.example.myapplication.ui.components.UserHeader
-import com.example.myapplication.ui.components.UserInfoSection
-
-
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 
-
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.components.TopicDropdown
-import com.example.myapplication.ui.components.VocabularyList
 import kotlinx.coroutines.launch
 
-import android.graphics.Bitmap
-import android.provider.MediaStore
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-
-
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.theme.MainColor
-import kotlinx.coroutines.launch
-
-
+import androidx.compose.ui.input.pointer.pointerInput
+import com.example.myapplication.api.ApiService
+import com.example.myapplication.ui.chat.ChatMessage
+import org.json.JSONObject
 
 
 @Composable
 fun ChatSmartAiChatScreen(
-    messages: List<ChatMessage>,
+
+    sentence: String,
     onBack: () -> Unit = {},
-    onRecord: () -> Unit = {},
+    onRecordStart: () -> Unit = {},
+    onRecordStop: (((String) -> Unit) -> Unit) = {},  // 👈 kiểu có nhận callback
     onPlayAudio: (String) -> Unit = {}
 ) {
+    val coroutineScope = rememberCoroutineScope()
+    var messages by remember {
+        mutableStateOf(listOf(ChatMessage("User", sentence, true)))
+    }
+
+    val isRecording = remember { mutableStateOf(false) }
+    val calledUserMessages = remember { mutableStateListOf<String>() } // nhớ những user messages đã gọi API
+    // 👇 Khi có tin nhắn mới từ user, gọi API để lấy phản hồi
+    LaunchedEffect(messages.lastOrNull()) {
+        val lastMessage = messages.lastOrNull()
+        if (lastMessage?.isUser == true && !calledUserMessages.contains(lastMessage.text)) {
+            // đánh dấu đã gọi API cho message này
+            calledUserMessages.add(lastMessage.text)
+
+            ApiService.generateText(lastMessage.text) { code, response ->
+                if (code == 200 && response != null) {
+                    try {
+                        val json = JSONObject(response)
+                        val textResponse = json.optString("response", "")
+                        if (textResponse.isNotEmpty()) {
+                            val aiMessage = ChatMessage("Lingoo", textResponse, false)
+                            coroutineScope.launch {
+                                messages = messages + aiMessage
+                                onPlayAudio(textResponse)
+                            }
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -131,14 +128,33 @@ fun ChatSmartAiChatScreen(
                     .padding(bottom = 8.dp),
                 horizontalArrangement = Arrangement.Center
             ) {
-                IconButton(
-                    onClick = onRecord,
+                Box(
                     modifier = Modifier
                         .size(56.dp)
                         .background(Color(0xFFD9D9D9), shape = RoundedCornerShape(28.dp))
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = {
+                                    isRecording.value = true
+                                    onRecordStart()
+                                    tryAwaitRelease()  // đợi người dùng thả tay
+                                    isRecording.value = false
+                                    onRecordStop { transcription ->
+                                        Log.d("Transcription", transcription)
+                                        if (transcription.isNotBlank()) {
+                                            // Thêm message của User với transcription vừa thu được
+                                            coroutineScope.launch {
+                                                messages = messages + ChatMessage("User", transcription, true)
+                                            }
+                                        }
+                                    }
+                                }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_mic), // Thay bằng icon mic thật
+                        painter = painterResource(id = R.drawable.ic_mic),
                         contentDescription = "Mic",
                         modifier = Modifier.size(32.dp)
                     )
@@ -190,14 +206,14 @@ fun ChatBubble(
 }
 
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewChatSmartAiChatScreen() {
-    val messages = listOf(
-        ChatMessage("HN143", "Hello, I'm Ngan", true),
-        ChatMessage("Lingoo", "Hi Ngan, I'm Lingoo.\nCan I help you?", false),
-        ChatMessage("HN143", "I want to practice English skills", true),
-        ChatMessage("Lingoo", "Okay, let's go.", false)
-    )
-    ChatSmartAiChatScreen(messages)
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewChatSmartAiChatScreen() {
+//    val messages = listOf(
+//        ChatMessage("HN143", "Hello, I'm Ngan", true),
+//        ChatMessage("Lingoo", "Hi Ngan, I'm Lingoo.\nCan I help you?", false),
+//        ChatMessage("HN143", "I want to practice English skills", true),
+//        ChatMessage("Lingoo", "Okay, let's go.", false)
+//    )
+//    ChatSmartAiChatScreen(messages)
+//}

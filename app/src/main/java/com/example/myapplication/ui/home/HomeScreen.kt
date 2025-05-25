@@ -1,67 +1,32 @@
-package com.example.myapplication.ui.screens
+package com.example.myapplication.ui.home
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.MailOutline
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Person
-import com.example.myapplication.ui.components.WordCamScreen
 
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.components.LearningProgressSection
-import com.example.myapplication.ui.components.LogoutButton
-import com.example.myapplication.ui.components.UserHeader
-import com.example.myapplication.ui.components.UserInfoSection
 
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import com.example.myapplication.R
 
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.unit.dp
-import com.example.myapplication.ui.components.TopicDropdown
-import com.example.myapplication.ui.components.VocabularyList
-import kotlinx.coroutines.launch
-
-import android.graphics.Bitmap
-import android.provider.MediaStore
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
 
 
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.theme.MainColor
-import kotlinx.coroutines.launch
-
 
 
 //

@@ -1,6 +1,7 @@
 package com.example.myapplication
 
 
+import android.annotation.SuppressLint
 import com.example.myapplication.ui.theme.MainColor
 
 import android.content.Intent
@@ -15,11 +16,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.myapplication.api.ApiService
 
+@SuppressLint("CustomSplashScreen")
 class SplashActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,6 +30,17 @@ class SplashActivity : ComponentActivity() {
         setContent {
             SplashScreenUI()
         }
+
+        ApiService.fetchAndSetBaseUrl { success ->
+            runOnUiThread {
+                if (success) {
+                    // BASE_URL đã được cập nhật, có thể gọi api khác
+                } else {
+                    // Xử lý lỗi
+                }
+            }
+        }
+
 
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))

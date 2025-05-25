@@ -1,183 +1,25 @@
-//package com.example.myapplication.navigation
-//
-//import androidx.compose.runtime.Composable
-//import androidx.navigation.NavHostController
-//import androidx.navigation.compose.NavHost
-//import androidx.navigation.compose.composable
-//import androidx.navigation.compose.rememberNavController
-//import com.example.myapplication.ui.screens.*
-//import com.example.myapplication.ui.components.*
-//
-//object Routes {
-//    // Auth routes
-//    const val SPLASH = "splash"
-//    const val LOGIN = "login"
-//    const val REGISTER = "register"
-//
-//    // Main features
-//    const val HOME = "home"
-//
-//    // Word Genie feature
-//    const val WORD_GENIE = "word_genie"
-//    const val VOCAB_INFO = "vocab_info"
-//
-//    // Chat Smart AI feature
-//    const val CHAT_SMART_AI_WELCOME = "chat_smart_ai_welcome"
-//    const val CHAT_SMART_AI_CHAT = "chat_smart_ai_chat"
-//
-//    // Visionary Words feature
-//    const val VISIONARY_WELCOME = "visionary_welcome"
-//
-//    // History feature
-//    const val HISTORY = "history"
-//}
-//
-//@Composable
-//fun AppNavGraph(
-//    navController: NavHostController = rememberNavController(),
-//    startDestination: String = Routes.LOGIN
-//) {
-//    NavHost(navController = navController, startDestination = startDestination) {
-//        // Auth flow
-//        composable(Routes.LOGIN) {
-//            LoginScreen(
-//                onLoginSuccess = {
-//                    navController.navigate(Routes.HOME) {
-//                        popUpTo(Routes.LOGIN) { inclusive = true }
-//                    }
-//                },
-//                onNavigateToRegister = {
-//                    navController.navigate(Routes.REGISTER)
-//                }
-//            )
-//        }
-//
-//        composable(Routes.REGISTER) {
-//            RegisterScreen(
-//                onRegisterSuccess = {
-//                    navController.navigate(Routes.HOME) {
-//                        popUpTo(Routes.REGISTER) { inclusive = true }
-//                    }
-//                },
-//                onBackToLogin = { false } // Trả về false để không thực hiện điều hướng
-//            )
-//        }
-//
-//        // Main screen
-//        composable(Routes.HOME) {
-//            HomeScreen(
-//                onWordGenieClick = { navController.navigate(Routes.WORD_GENIE) },
-//                onChatSmartAIClick = { navController.navigate(Routes.CHAT_SMART_AI_WELCOME) },
-//                onVisionaryWordsClick = { navController.navigate(Routes.VISIONARY_WELCOME) },
-//                onHistoryClick = { navController.navigate(Routes.HISTORY) }
-//            )
-//        }
-//
-//        // Word Genie flow
-//        composable(Routes.WORD_GENIE) {
-//            WordGenieScreen(
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onNavItemSelected = { route -> handleBottomNavigation(navController, route) }
-//            )
-//        }
-//
-//        composable(
-//            route = "${Routes.VOCAB_INFO}/{word}"
-//        ) { backStackEntry ->
-//            val word = backStackEntry.arguments?.getString("word") ?: ""
-//            WordDetailScreen(
-//                wordDetail = WordDetail(
-//                    word = word,
-//                    phonetic = "/word/", // Giả sử
-//                    meaning = "Meaning", // Giả sử
-//                    synonyms = listOf(),
-//                    antonyms = listOf(),
-//                    phrases = listOf(),
-//                    onBackPressed = { false }
-//                ),
-//                onBack = {
-//                    navController.popBackStack()
-//                }
-//            )
-//        }
-//
-//        // Chat Smart AI flow
-//        composable(Routes.CHAT_SMART_AI_WELCOME) {
-//            ChatSmartAiWelcomeScreen(
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onRecord = {
-//                    navController.navigate(Routes.CHAT_SMART_AI_CHAT)
-//                }
-//            )
-//        }
-//
-//        composable(Routes.CHAT_SMART_AI_CHAT) {
-//            ChatSmartAiChatScreen(
-//                messages = listOf(
-//                    ChatMessage("Lingoo", "Hello, how can I help you?", false),
-//                    ChatMessage("User", "I want to learn English", true)
-//                ), // Sample messages
-//                onBack = {
-//                    navController.popBackStack()
-//                }
-//            )
-//        }
-//
-//        // Visionary Words flow
-//        composable(Routes.VISIONARY_WELCOME) {
-//            VisionaryWelcomeScreen(
-//                onOpenCamera = {
-//                    // Navigation to camera screen would go here
-//                }
-//            )
-//        }
-//
-//        // History flow
-//        composable(Routes.HISTORY) {
-//            HistoryScreen(
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onBottomNavClicked = {  }
-//            )
-//        }
-//    }
-//}
-//
-//// Hàm xử lý bottom navigation
-//private fun handleBottomNavigation(navController: NavHostController, route: String) {
-//    navController.navigate(route) {
-//        popUpTo(Routes.HOME)
-//        launchSingleTop = true
-//    }
-//}
-//
-//
-//
-//
-//
-//
-
-
-
-
-
 package com.example.myapplication.navigation
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.myapplication.api.ApiService
+import com.example.myapplication.ui.auth.RegisterScreen
+import com.example.myapplication.ui.chat.ChatSmartAiWelcomeScreen
+import com.example.myapplication.ui.chat.RecordingManager
 import com.example.myapplication.ui.screens.*
 import com.example.myapplication.ui.components.*
+import com.example.myapplication.ui.history.HistoryScreen
+import com.example.myapplication.ui.home.HomeScreen
 import com.example.myapplication.ui.visionaryword.VisionaryWordsScreen
+import com.example.myapplication.ui.wordgenie.WordDetailScreen
+import com.example.myapplication.ui.wordgenie.WordGenieScreen
 
-//import com.example.myapplication.ui.common.BottonNav
 object Routes {
     // Auth routes
     const val SPLASH = "splash"
@@ -204,6 +46,9 @@ fun AppNavGraph(
     navController: NavHostController = rememberNavController(),
     startDestination: String = Routes.LOGIN
 ) {
+    val context = LocalContext.current
+    val recordingManager = remember { RecordingManager(context) }
+
     NavHost(navController = navController, startDestination = startDestination) {
         // Auth flow
         composable(Routes.LOGIN) {
@@ -219,6 +64,7 @@ fun AppNavGraph(
             )
         }
 
+
         composable(Routes.REGISTER) {
             RegisterScreen(
                 onRegisterSuccess = {
@@ -226,7 +72,7 @@ fun AppNavGraph(
                         popUpTo(Routes.REGISTER) { inclusive = true }
                     }
                 },
-                onBackToLogin = { false }
+                onBackToLogin = { navController.navigate(Routes.LOGIN) }
             )
         }
 
@@ -261,17 +107,20 @@ fun AppNavGraph(
         ) { backStackEntry ->
             val word = backStackEntry.arguments?.getString("word") ?: ""
             WordDetailScreen(
-                wordDetail = WordDetail(
-                    word = word,
-                    phonetic = "/word/",
-                    meaning = "Meaning",
-                    synonyms = listOf(),
-                    antonyms = listOf(),
-                    phrases = listOf(),
-                    onBackPressed = { false }
-                ),
+                word = word,
                 onBack = {
                     navController.popBackStack()
+                },
+                onPlayAudio =  { word -> recordingManager.playAudioFromText(word) },
+                onSave = { wordToSave ->
+                    ApiService.addVocabulary(wordToSave, null) { code, _ ->
+                        if (code == 200) {
+                            Toast.makeText(context, "success", Toast.LENGTH_SHORT).show()
+                        } else {
+                            // Xử lý lỗi, ví dụ:
+                            Toast.makeText(context, "Lưu từ thất bại", Toast.LENGTH_SHORT).show()
+                        }
+                    }
                 }
             )
         }
@@ -282,23 +131,41 @@ fun AppNavGraph(
                 onBack = {
                     navController.popBackStack()
                 },
-                onRecord = {
-                    navController.navigate(Routes.CHAT_SMART_AI_CHAT)
-                } ,
+                onRecordStart = {
+                    recordingManager.startRecording()
+                },
+                onRecordStop = { onResult ->
+                    recordingManager.stopRecording { transcription ->
+                        transcription?.let { onResult(it) }
+                    }
+                },
+                onNavigate = {
+                        sentence ->
+                    navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence")
+                },
                 onNavItemSelected = { route -> handleBottomNavigation(navController, route) }
             )
         }
 
         // Sub-routes của Chat Smart AI
-        composable(Routes.CHAT_SMART_AI_CHAT) {
+        composable(route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}"
+        ) { backStackEntry ->
+
+            val sentence = backStackEntry.arguments?.getString("sentence") ?: ""
             ChatSmartAiChatScreen(
-                messages = listOf(
-                    ChatMessage("Lingoo", "Hello, how can I help you?", false),
-                    ChatMessage("User", "I want to learn English", true)
-                ),
+                sentence = sentence,
+                onRecordStart = {
+                    recordingManager.startRecording()
+                },
+                onRecordStop = { onResult ->
+                    recordingManager.stopRecording { transcription ->
+                        transcription?.let { onResult(it) }
+                    }
+                },
                 onBack = {
                     navController.popBackStack()
-                }
+                },
+                onPlayAudio =  { word -> recordingManager.playAudioFromText(word) }
             )
         }
 
@@ -337,3 +204,4 @@ private fun handleBottomNavigation(navController: NavHostController, route: Stri
         restoreState = true
     }
 }
+

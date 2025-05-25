@@ -17,7 +17,9 @@ import androidx.compose.ui.text.font.FontWeight
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowBack
@@ -89,7 +91,7 @@ fun WordDetailContent(
     var selectedTab by remember { mutableStateOf(0) }
     val tabTitles = listOf("Synonyms", "Antonyms", "Phrases")
     val tabData = listOf(wordDetail.synonyms, wordDetail.antonyms, wordDetail.phrases)
-
+    val scrollState = rememberScrollState()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -98,7 +100,8 @@ fun WordDetailContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp)
+                .verticalScroll(scrollState),
                 verticalArrangement = Arrangement.Center
         ) {
             // Header

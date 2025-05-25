@@ -1,3 +1,7 @@
+
+
+
+
 package com.example.myapplication.ui.components
 
 import android.util.Log
@@ -5,8 +9,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.sp
-
-
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -32,14 +34,17 @@ import com.example.myapplication.api.ApiService
 import com.example.myapplication.ui.chat.ChatMessage
 import org.json.JSONObject
 
+// Thêm imports cho LazyColumn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 @Composable
 fun ChatSmartAiChatScreen(
-
     sentence: String,
     onBack: () -> Unit = {},
     onRecordStart: () -> Unit = {},
-    onRecordStop: (((String) -> Unit) -> Unit) = {},  // 👈 kiểu có nhận callback
+    onRecordStop: (((String) -> Unit) -> Unit) = {},  //  kiểu có nhận callback
     onPlayAudio: (String) -> Unit = {}
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -49,7 +54,18 @@ fun ChatSmartAiChatScreen(
 
     val isRecording = remember { mutableStateOf(false) }
     val calledUserMessages = remember { mutableStateListOf<String>() } // nhớ những user messages đã gọi API
-    // 👇 Khi có tin nhắn mới từ user, gọi API để lấy phản hồi
+
+    // Thêm scrollState cho LazyColumn
+    val scrollState = rememberLazyListState()
+
+    // Tự động cuộn xuống khi có tin nhắn mới
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            scrollState.animateScrollToItem(messages.size - 1)
+        }
+    }
+
+    //  Khi có tin nhắn mới từ user, gọi API để lấy phản hồi
     LaunchedEffect(messages.lastOrNull()) {
         val lastMessage = messages.lastOrNull()
         if (lastMessage?.isUser == true && !calledUserMessages.contains(lastMessage.text)) {
@@ -96,8 +112,6 @@ fun ChatSmartAiChatScreen(
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back",
                         modifier = Modifier.size(32.dp)
-                           // .padding(top =40.dp)
-
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
@@ -111,11 +125,12 @@ fun ChatSmartAiChatScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Danh sách tin nhắn
-            Column(
+            // Thay thế Column bằng LazyColumn
+            LazyColumn(
+                state = scrollState,
                 modifier = Modifier.weight(1f)
             ) {
-                messages.forEach { msg ->
+                items(messages) { msg ->
                     ChatBubble(msg, onPlayAudio)
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -160,8 +175,6 @@ fun ChatSmartAiChatScreen(
                     )
                 }
             }
-
-
         }
     }
 }
@@ -172,7 +185,8 @@ fun ChatBubble(
     onPlayAudio: (String) -> Unit
 ) {
     Column(
-        horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start
+        horizontalAlignment = if (message.isUser) Alignment.End else Alignment.Start,
+        modifier = Modifier.fillMaxWidth()
     ) {
         Text(
             message.sender,
@@ -180,40 +194,53 @@ fun ChatBubble(
             fontSize = 14.sp
         )
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFD1C4E9),
-                modifier = Modifier
-                    .defaultMinSize(minWidth = 80.dp)
-            ) {
-                Text(
-                    message.text,
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(12.dp)
-                )
-            }
-            IconButton(onClick = { onPlayAudio(message.text) }) {
-                Icon(
-                    Icons.Default.PlayArrow,
-                    contentDescription = "Play audio",
-                    modifier = Modifier.size(20.dp)
-                )
+            if (!message.isUser) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFD1C4E9), // Màu tím nhạt cho Lingoo
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 80.dp)
+                        .weight(1f, fill = false)
+                ) {
+                    Text(
+                        message.text,
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+                IconButton(onClick = { onPlayAudio(message.text) }) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = "Play audio",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            } else {
+                IconButton(onClick = { onPlayAudio(message.text) }) {
+                    Icon(
+                        Icons.Default.PlayArrow,
+                        contentDescription = "Play audio",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFE3F2FD), // Màu xanh nhạt cho User
+                    modifier = Modifier
+                        .defaultMinSize(minWidth = 80.dp)
+                        .weight(1f, fill = false)
+                ) {
+                    Text(
+                        message.text,
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
             }
         }
     }
 }
-
-
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewChatSmartAiChatScreen() {
-//    val messages = listOf(
-//        ChatMessage("HN143", "Hello, I'm Ngan", true),
-//        ChatMessage("Lingoo", "Hi Ngan, I'm Lingoo.\nCan I help you?", false),
-//        ChatMessage("HN143", "I want to practice English skills", true),
-//        ChatMessage("Lingoo", "Okay, let's go.", false)
-//    )
-//    ChatSmartAiChatScreen(messages)
-//}

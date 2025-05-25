@@ -50,7 +50,7 @@ data class ChatMessage(
 fun ChatSmartAiWelcomeScreen(
     onBack: () -> Unit = {},
     onRecordStart: () -> Unit = {},
-    onRecordStop: (((String) -> Unit) -> Unit) = {},  // 👈 kiểu có nhận callback
+    onRecordStop: (((String) -> Unit) -> Unit) = {},  //  kiểu có nhận callback
     onNavigate: (Any?) -> Unit = {},
     onNavItemSelected: (String) -> Unit = {} // Thêm tham số này
 ) {

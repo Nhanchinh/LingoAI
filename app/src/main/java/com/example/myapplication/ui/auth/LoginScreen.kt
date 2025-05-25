@@ -1,5 +1,8 @@
 package com.example.myapplication.ui.screens
 
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,7 +30,7 @@ import com.example.myapplication.ui.theme.AppText
 import com.example.myapplication.ui.common.KeyboardDismissWrapper
 import kotlinx.coroutines.launch
 import org.json.JSONObject
-
+import com.example.myapplication.UserPreferences
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
@@ -96,22 +99,42 @@ fun LoginScreen(
 
             Button(
                 onClick = {
-                    ApiService.loginUser(username, password) { statusCode, responseJson ->
-                        coroutineScope.launch {
-                            if (statusCode == 200 && responseJson != null) {
-                                val jsonObject = JSONObject(responseJson)
-                                val userId = jsonObject.optString("user_id")
-                                Toast.makeText(context, "Login thành công!", Toast.LENGTH_SHORT).show()
-                                ApiService.setUserId(userId)
-                                onLoginSuccess()
-                            } else {
-                                val errorMsg = try {
-                                    JSONObject(responseJson ?: "").optString("error", "Đăng nhập thất bại")
-                                } catch (e: Exception) {
-                                    "Đăng nhập thất bại (lỗi bất định)"
+                    ApiService.loginUser(username, password) { code, responseBody ->
+                        if (code == 200 && responseBody != null) {
+                            try {
+                                val jsonResponse = JSONObject(responseBody)
+                                if (jsonResponse.has("user_id")) {
+                                    val userId = jsonResponse.getString("user_id")
+
+                                    // Lưu ID người dùng vào ApiService
+                                    ApiService.setUserId(userId)
+
+                                    // Lưu thông tin đăng nhập vào UserPreferences
+                                    coroutineScope.launch {
+                                        val userPreferences = UserPreferences(context)
+                                        userPreferences.saveUserData(userId, username)
+                                        Log.d("LoginScreen", "Saved user data: $userId, $username")
+                                    }
                                 }
-                                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
-                                error = true
+
+                                // UI thread để hiển thị Toast và điều hướng
+                                Handler(Looper.getMainLooper()).post {
+                                    Toast.makeText(context, "Đăng nhập thành công", Toast.LENGTH_SHORT).show()
+                                    onLoginSuccess()
+                                }
+                            } catch (e: Exception) {
+                                Log.e("LoginScreen", "Error parsing login response: ${e.message}")
+                                Handler(Looper.getMainLooper()).post {
+                                    Toast.makeText(context, "Lỗi xử lý dữ liệu đăng nhập", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        } else {
+                            Handler(Looper.getMainLooper()).post {
+                                Toast.makeText(
+                                    context,
+                                    if (code == -1) "Lỗi kết nối" else "Sai tên đăng nhập hoặc mật khẩu",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         }
                     }

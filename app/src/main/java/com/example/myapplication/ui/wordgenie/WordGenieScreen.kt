@@ -1,32 +1,31 @@
+
+
+
+
+
 package com.example.myapplication.ui.wordgenie
-
-
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-
-
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
-
 import androidx.compose.foundation.Image
-
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import com.example.myapplication.R
-
-
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.ArrowBack
-
-
 import com.example.myapplication.ui.common.BottomNavBar
+
+// Thêm imports cho scroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+
 @Composable
 fun WordGenieScreen(
     onBack: () -> Unit,
@@ -49,15 +48,15 @@ fun WordGenieScreen(
         ) {
             Icon(Icons.Default.ArrowBack, contentDescription = "Back",
                 modifier = Modifier.size(32.dp)
-
-                )
+            )
         }
 
-        // Nội dung chính
+        // Nội dung chính - thêm verticalScroll
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp)
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
@@ -98,6 +97,8 @@ fun WordGenieScreen(
             ) {
                 Text("Tạo", fontWeight = FontWeight.Bold)
             }
+            // Thêm Spacer để dễ cuộn khi bàn phím hiện lên
+            Spacer(modifier = Modifier.height(100.dp))
         }
 
         // Navbar dưới cùng
@@ -108,12 +109,3 @@ fun WordGenieScreen(
         )
     }
 }
-
-//@Preview(showBackground = true)
-//@Composable
-//fun WordGenieScreenPreview() {
-//    WordGenieScreen(
-//        onBack = {},
-//        onNavItemSelected = {}
-//    )
-//}

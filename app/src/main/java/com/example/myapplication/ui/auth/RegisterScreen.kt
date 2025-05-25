@@ -64,10 +64,12 @@
 
 
 
-package com.example.myapplication.ui.screens
+package com.example.myapplication.ui.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -75,20 +77,28 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
+import com.example.myapplication.api.ApiService
 import com.example.myapplication.ui.common.KeyboardDismissWrapper
+import com.example.myapplication.ui.theme.AppText
+import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 
 @Composable
-fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Boolean) {
+fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     KeyboardDismissWrapper {
 
@@ -144,7 +154,26 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Boolean) 
 
             // Nút Sign up
             Button(
-                onClick = { onRegisterSuccess() },
+                onClick = {
+                    ApiService.registerUser(username, password) { statusCode, responseJson ->
+                        coroutineScope.launch {
+                            if (statusCode == 200 && responseJson != null) {
+                                val jsonObject = JSONObject(responseJson)
+                                val userId = jsonObject.optString("user_id")
+                                Toast.makeText(context, "Login thành công!", Toast.LENGTH_SHORT).show()
+                                ApiService.setUserId(userId)
+                                onRegisterSuccess()
+                            } else {
+                                val errorMsg = try {
+                                    JSONObject(responseJson ?: "").optString("error", "Đăng nhập thất bại")
+                                } catch (e: Exception) {
+                                    "Đăng nhập thất bại (lỗi bất định)"
+                                }
+                                Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                },
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFD1BFE6),
@@ -154,8 +183,18 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Boolean) 
                     .fillMaxWidth(0.55f)
                     .height(48.dp)
             ) {
-                Text("Sign up", fontSize = 20.sp)
+                Text("Đăng kí", fontSize = 20.sp)
             }
+
+            Text(
+                text = "Bạn đã có tài khoản? Đăng Nhập",
+                modifier = Modifier
+                    .clickable { onBackToLogin() }
+                    .padding(top = 16.dp),
+                textAlign = TextAlign.Center,
+                color = AppText,
+                textDecoration = TextDecoration.Underline
+            )
         }
 
 
@@ -169,7 +208,7 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Boolean) 
 @Composable
 fun showPreview(){
     RegisterScreen(
-        onRegisterSuccess={},
+        onRegisterSuccess ={},
          onBackToLogin ={true}
     )
 }

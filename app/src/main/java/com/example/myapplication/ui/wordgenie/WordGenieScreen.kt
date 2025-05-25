@@ -1,4 +1,4 @@
-package com.example.myapplication.ui.screens
+package com.example.myapplication.ui.wordgenie
 
 
 
@@ -24,10 +24,9 @@ import com.example.myapplication.R
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.ui.tooling.preview.Preview
 
 
-import com.example.myapplication.ui.components.BottomNavBar
+import com.example.myapplication.ui.common.BottomNavBar
 @Composable
 fun WordGenieScreen(
     onBack: () -> Unit,

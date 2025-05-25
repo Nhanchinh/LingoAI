@@ -24,12 +24,11 @@ import com.example.myapplication.R
 
 
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 
 
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.myapplication.ui.components.BottomNavBar
-import com.example.myapplication.ui.components.VisionaryCameraScreen
-import com.example.myapplication.ui.components.VisionaryResultScreen
+import com.example.myapplication.ui.common.BottomNavBar
 
 
 enum class VisionaryStep { Welcome, Camera, Result }
@@ -46,7 +45,8 @@ fun VisionaryWordsScreen(
 ) {
     var step by remember { mutableStateOf(VisionaryStep.Welcome) }
     var capturedImage by remember { mutableStateOf<Bitmap?>(null) }
-
+    val context = LocalContext.current
+    
     when (step) {
         VisionaryStep.Welcome -> VisionaryWelcomeScreen(
             onOpenCamera = { step = VisionaryStep.Camera },
@@ -62,7 +62,8 @@ fun VisionaryWordsScreen(
         VisionaryStep.Result -> VisionaryResultScreen(
             image = capturedImage,
             onRetake = { step = VisionaryStep.Camera },
-            onNavItemSelected = onNavItemSelected
+            onNavItemSelected = onNavItemSelected,
+            context = context
         )
     }
 }
@@ -148,5 +149,10 @@ fun PreviewVisionaryCameraScreen() {
 @Preview(showBackground = true)
 @Composable
 fun PreviewVisionaryResultScreen() {
-    VisionaryResultScreen(image = null, onRetake = {})
+    VisionaryResultScreen(
+        context = LocalContext.current,
+        image = null,
+        onRetake = {},
+        onNavItemSelected = {}
+    )
 }

@@ -1,5 +1,4 @@
-package com.example.myapplication.ui.components
-
+package com.example.myapplication.ui.common
 
 
 import androidx.compose.foundation.layout.*

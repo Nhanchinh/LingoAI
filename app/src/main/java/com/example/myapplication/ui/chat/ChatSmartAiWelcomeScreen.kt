@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.example.myapplication.R
 
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -56,7 +57,7 @@ fun ChatSmartAiWelcomeScreen(
 ) {
     val context = LocalContext.current
     val isRecording = remember { mutableStateOf(false) }
-
+    var pressStartTime by remember { mutableStateOf(0L) }
     // Khai báo launcher để request quyền
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -141,17 +142,24 @@ fun ChatSmartAiWelcomeScreen(
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onPress = {
+                                pressStartTime = System.currentTimeMillis()
                                 isRecording.value = true
                                 onRecordStart()
-                                // Chờ người dùng thả tay
-                                tryAwaitRelease()
+
+                                val released = tryAwaitRelease()
 
                                 isRecording.value = false
-                                onRecordStop { transcription ->
-                                    Log.d("Transcription", transcription)
-                                    // Chuyển sang main thread để điều hướng
-                                    CoroutineScope(Dispatchers.Main).launch {
-                                        onNavigate(transcription) // bên trong navigate()
+                                val pressDuration = System.currentTimeMillis() - pressStartTime
+
+                                if (pressDuration < 300) {
+                                    // Nếu nhấn quá nhanh
+                                    Toast.makeText(context, "Bạn cần giữ mic để ghi âm", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    onRecordStop { transcription ->
+                                        Log.d("Transcription", transcription)
+                                        CoroutineScope(Dispatchers.Main).launch {
+                                            onNavigate(transcription)
+                                        }
                                     }
                                 }
                             }
@@ -163,6 +171,7 @@ fun ChatSmartAiWelcomeScreen(
                     painter = painterResource(id = R.drawable.ic_mic),
                     contentDescription = "Mic",
                     modifier = Modifier.size(32.dp)
+
                 )
             }
 

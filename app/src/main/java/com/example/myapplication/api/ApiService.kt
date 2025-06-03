@@ -285,7 +285,7 @@ object ApiService {
     }
 
     // POST /related-word
-    fun getRelatedWords(word: String, limit: Int = 56, callback: (Int, String?) -> Unit) {
+    fun getRelatedWords(word: String, limit: Int = 5, callback: (Int, String?) -> Unit) {
         try {
             val json = JSONObject().apply {
                 put("word", word)

@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.ui.tooling.preview.Preview
 
 
 import com.example.myapplication.api.ApiService
@@ -219,7 +220,7 @@ fun WordItemRow(
                 Text(item.meaning)
             }
             IconButton(onClick = { onPlayAudio(item.word) }) {
-                Icon(Icons.Default.Face, contentDescription = "Play audio")
+                Icon(Icons.Default.PlayArrow, contentDescription = "Play audio")
             }
             IconButton(onClick = { onSave(item.word) }) {
                 Icon(Icons.Default.AddCircle, contentDescription = "Save")
@@ -262,25 +263,3 @@ fun parseWordDetailFromJson(
 }
 
 
-//
-//@Preview(showBackground = true, showSystemUi = true)
-//@Composable
-//fun PreviewWordDetailScreen() {
-//    val wordDetail = WordDetail(
-//        word = "Beautiful",
-//        phonetic = "/bjuː.tɪ.fəl/",
-//        meaning = "Đẹp, hay, tốt đẹp",
-//        synonyms = listOf(
-//            WordItem("Attractive", "/əˈtræktɪv/", "Thu hút"),
-//            WordItem("Stunning", "/ˈstʌnɪŋ/", "Tuyệt vời, lộng lẫy"),
-//            WordItem("Gorgeous", "/ˈɡɔː.dʒəs/", "Rực rỡ, lộng lẫy")
-//        ),
-//        antonyms = listOf(
-//            WordItem("Ugly", "/ˈʌɡli/", "Xấu xí")
-//        ),
-//        phrases = listOf(
-//            WordItem("Beautiful day", "", "Một ngày đẹp trời")
-//        )
-//    ) { navController.popBackStack() }
-//    WordDetailScreen(wordDetail)
-//}

@@ -5,6 +5,7 @@
 
 package com.example.myapplication.ui.wordgenie
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.*
@@ -25,6 +26,7 @@ import com.example.myapplication.ui.common.BottomNavBar
 // Thêm imports cho scroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.platform.LocalContext
 
 @Composable
 fun WordGenieScreen(
@@ -32,8 +34,8 @@ fun WordGenieScreen(
     onNavItemSelected: (String) -> Unit,
     onSearchComplete: (String) -> Unit // Thêm callback này
 ) {
-    var searchWord by remember { mutableStateOf("Beautiful") } // Thêm state để lưu từ nhập vào
-
+    var searchWord by remember { mutableStateOf("") } // Thêm state để lưu từ nhập vào
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -85,7 +87,15 @@ fun WordGenieScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { onSearchComplete(searchWord) }, // Gọi callback khi nhấn nút
+                onClick = {
+                    if (searchWord.isBlank()) {
+
+                        Toast.makeText(context, "Bạn phải nhập từ", Toast.LENGTH_SHORT).show()
+                    } else {
+                        onSearchComplete(searchWord)
+                    }
+
+                }, // Gọi callback khi nhấn nút
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFFD17878),

@@ -113,14 +113,14 @@ fun FlashcardStudyScreen(
                             modifier = Modifier.size(32.dp)
                         )
                     }
-                    
+
                     Text(
                         text = "${currentIndex + 1}/${flashcards.size}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
-                    
+
                     IconButton(onClick = { showModeDialog = true }) {
                         Icon(
                             Icons.Default.Settings,
@@ -140,9 +140,9 @@ fun FlashcardStudyScreen(
                     color = Color(0xFFE48ED4),
                     trackColor = Color.White.copy(alpha = 0.5f)
                 )
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
+
                 // Flashcard view
                 if (currentIndex < flashcards.size) {
                     FlashcardView(
@@ -155,9 +155,9 @@ fun FlashcardStudyScreen(
                         modifier = Modifier.weight(1f)
                     )
                 }
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
-                
+
                 // Control buttons theo style của dự án
                 Row(
                     modifier = Modifier
@@ -179,22 +179,23 @@ fun FlashcardStudyScreen(
                         shape = RoundedCornerShape(20.dp)
                     ) {
                         Icon(Icons.Default.ArrowBack, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
+                       // Spacer(modifier = Modifier.width(4.dp))
                         Text("Trước", color = Color.Black)
                     }
-//
-//                    Button(
-//                        onClick = { isFlipped = !isFlipped },
-//                        colors = ButtonDefaults.buttonColors(
-//                            containerColor = Color(0xFFE48ED4)
-//                        ),
-//                        shape = RoundedCornerShape(20.dp)
-//                    ) {
-//                        Icon(Icons.Default.Info, contentDescription = null)
-//                        Spacer(modifier = Modifier.width(4.dp))
-//                        Text("Lật thẻ")
-//                    }
-                    Spacer(modifier = Modifier.width(20.dp)) // Điều chỉnh giá trị này theo ý muốn
+
+                    Spacer(modifier = Modifier.width(4.dp)) // Điều chỉnh giá trị này theo ý muốn
+                    Button(
+                        onClick = { isFlipped = !isFlipped },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFFE48ED4)
+                        ),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Lật thẻ")
+                    }
+                    Spacer(modifier = Modifier.width(4.dp)) // Điều chỉnh giá trị này theo ý muốn
                     Button(
                         onClick = {
                             if (currentIndex < flashcards.size - 1) {
@@ -214,9 +215,9 @@ fun FlashcardStudyScreen(
                         Icon(Icons.Default.ArrowForward, contentDescription = null)
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(16.dp))
-                
+
                 // Action buttons khi đã lật thẻ
                 if (isFlipped) {
                     Row(
@@ -243,7 +244,7 @@ fun FlashcardStudyScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Biết rồi")
                         }
-                        
+
                         Button(
                             onClick = {
                                 viewModel.updateFlashcardLearnedStatus(setId, flashcards[currentIndex].id, false)
@@ -266,7 +267,7 @@ fun FlashcardStudyScreen(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
@@ -362,7 +363,7 @@ fun FlashcardView(
                         StudyMode.BACK_TO_FRONT -> flashcard.back   // Nghĩa tiếng Việt
                         StudyMode.MIXED -> flashcard.front
                     }
-                    
+
                     Text(
                         text = frontText,
                         style = MaterialTheme.typography.headlineMedium,
@@ -370,7 +371,7 @@ fun FlashcardView(
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     // Chỉ hiển thị IPA và nút phát âm khi ở chế độ FRONT_TO_BACK (từ EN -> VN)
                     if (studyMode == StudyMode.FRONT_TO_BACK && flashcard.ipa.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -391,7 +392,7 @@ fun FlashcardView(
                         }
                     }
                 }
-                
+
                 // Tap hint
                 Text(
                     text = "Chạm để lật thẻ",
@@ -404,7 +405,7 @@ fun FlashcardView(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.graphicsLayer { 
+                    modifier = Modifier.graphicsLayer {
                         rotationY = 180f  // Lật ngược để text đọc được
                     }
                 ) {
@@ -413,14 +414,14 @@ fun FlashcardView(
                         StudyMode.BACK_TO_FRONT -> flashcard.front  // Từ tiếng Anh
                         StudyMode.MIXED -> flashcard.back
                     }
-                    
+
                     Text(
                         text = backText,
                         style = MaterialTheme.typography.headlineSmall,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                    
+
                     // Hiển thị IPA khi ở chế độ BACK_TO_FRONT và đang hiển thị từ tiếng Anh
                     if (studyMode == StudyMode.BACK_TO_FRONT && flashcard.ipa.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(16.dp))
@@ -431,7 +432,7 @@ fun FlashcardView(
                         )
                     }
                 }
-                
+
                 // Tap hint cho mặt sau
                 Text(
                     text = "Chạm để lật lại",
@@ -467,7 +468,7 @@ fun StudyModeDialog(
                 Spacer(modifier = Modifier.height(8.dp))
                 StudyModeOption(
                     mode = StudyMode.BACK_TO_FRONT,
-                    label = "Tiếng Việt → Tiếng Anh", 
+                    label = "Tiếng Việt → Tiếng Anh",
                     description = "Mặt trước: nghĩa tiếng Việt, mặt sau: từ tiếng Anh",
                     isSelected = currentMode == StudyMode.BACK_TO_FRONT,
                     onSelect = { onModeSelected(StudyMode.BACK_TO_FRONT) }
@@ -565,3 +566,7 @@ fun StudyCompleteDialog(
         }
     )
 }
+
+
+
+

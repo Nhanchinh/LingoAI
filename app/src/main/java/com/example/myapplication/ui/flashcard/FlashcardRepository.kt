@@ -7,10 +7,17 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
+// Thêm import này vào đầu file
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+
+
 
 class FlashcardRepository(context: Context) {
     private val dataStore = FlashcardDataStore(context)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    
+    private val saveMutex = Mutex()
     
     private val _flashcardSets = MutableStateFlow<List<FlashcardSet>>(emptyList())
     val flashcardSets: StateFlow<List<FlashcardSet>> = _flashcardSets.asStateFlow()
@@ -30,7 +37,13 @@ class FlashcardRepository(context: Context) {
     // Helper function để lưu dữ liệu
     private fun saveData() {
         scope.launch {
-            dataStore.saveFlashcardSets(_flashcardSets.value)
+            saveMutex.withLock {
+                try {
+                    dataStore.saveFlashcardSets(_flashcardSets.value)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 
@@ -139,6 +152,37 @@ class FlashcardRepository(context: Context) {
         }
         
         saveData() // LƯU DỮ LIỆU
+    }
+
+    // Thêm hàm này sau hàm addFlashcard hiện tại
+    fun addFlashcardsBatch(setId: String, cards: List<Triple<String, String, String>>) {
+        val newFlashcards = cards.map { (front, back, ipa) ->
+            Flashcard(
+                id = UUID.randomUUID().toString(),
+                front = front,
+                back = back,
+                ipa = ipa,
+                setId = setId
+            )
+        }
+        
+        // Cập nhật state 1 lần duy nhất
+        val updatedSets = _flashcardSets.value.map { set ->
+            if (set.id == setId) {
+                set.copy(flashcards = set.flashcards + newFlashcards)
+            } else {
+                set
+            }
+        }
+        _flashcardSets.value = updatedSets
+        
+        // Cập nhật currentSet nếu cần
+        if (_currentSet.value?.id == setId) {
+            _currentSet.value = updatedSets.find { it.id == setId }
+        }
+        
+        // Chỉ lưu 1 lần
+        saveData()
     }
 
     companion object {

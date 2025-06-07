@@ -1,5 +1,6 @@
 package com.example.myapplication.ui.flashcard
 
+import android.annotation.SuppressLint
 import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -26,6 +27,7 @@ import com.example.myapplication.ui.theme.ButtonSecondary
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.ui.theme.TextPrimary
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun FlashcardDetailScreen(
     setId: String,
@@ -34,169 +36,226 @@ fun FlashcardDetailScreen(
 ) {
     val context = LocalContext.current
     val viewModel: FlashcardViewModel = remember { FlashcardViewModel(context) }
-    
+
     val currentSet: FlashcardSet? by viewModel.currentSet.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var showImportDialog by remember { mutableStateOf(false) }
+    val importProgress by viewModel.importProgress.collectAsState()
+
+    // Snackbar Host State
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(setId) {
         viewModel.setCurrentSet(setId)
     }
 
-    currentSet?.let { set: FlashcardSet ->
-        // PATTERN GIỐNG CÁC TRANG KHÁC
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MainColor)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // HEADER như các trang khác
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = { showAddDialog = true }) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Thêm thẻ",
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-
-                // TITLE như các trang khác
-                Text(
-                    text = set.name,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
-                    modifier = Modifier.padding(vertical = 16.dp)
+    // Theo dõi trạng thái import
+    LaunchedEffect(importProgress) {
+        when (importProgress) {
+            is ImportProgress.Success -> {
+                showImportDialog = false
+                snackbarHostState.showSnackbar(
+                    message = "Đã import ${(importProgress as ImportProgress.Success).count} thẻ",
+                    duration = SnackbarDuration.Short
                 )
+            }
+            is ImportProgress.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = (importProgress as ImportProgress.Error).message,
+                    duration = SnackbarDuration.Long
+                )
+            }
+            else -> {}
+        }
+    }
 
-                // THỐNG KÊ
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { _ ->
+        currentSet?.let { set: FlashcardSet ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MainColor)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    StatCard(
-                        title = "Tổng số thẻ",
-                        value = set.flashcards.size.toString(),
-                        color = Color(0xFF2196F3)
-                    )
-                    StatCard(
-                        title = "Đã học",
-                        value = set.flashcards.count { it.isLearned }.toString(),
-                        color = Color(0xFF4CAF50)
-                    )
-                    StatCard(
-                        title = "Chưa học",
-                        value = set.flashcards.count { !it.isLearned }.toString(),
-                        color = Color(0xFFFF9800)
-                    )
-                }
+                    // HEADER
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth(),
 
-                Spacer(modifier = Modifier.height(24.dp))
-
-                if (set.flashcards.isEmpty()) {
-                    // EMPTY STATE
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            "Bộ flashcard trống",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = TextPrimary,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                        
-                        Button(
-                            onClick = { showAddDialog = true },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = ButtonPrimary
-                            ),
-                            shape = RoundedCornerShape(20.dp)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Thêm thẻ đầu tiên")
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+
+                        // Nút Import từ Quizlet
+                        IconButton(onClick = { showImportDialog = true }) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Import từ Quizlet",
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+
+                        IconButton(onClick = { showAddDialog = true }) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Thêm thẻ",
+                                modifier = Modifier.size(32.dp)
+                            )
                         }
                     }
-                } else {
-                    // LIST FLASHCARDS
-                    LazyColumn(
+
+                    // TITLE
+                    Text(
+                        text = set.name,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        modifier = Modifier.padding(vertical = 16.dp)
+                    )
+
+                    // STATS
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
                             .padding(horizontal = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        items(set.flashcards) { flashcard: Flashcard ->
-                            FlashcardItemCard(
-                                flashcard = flashcard,
-                                onDelete = { viewModel.deleteFlashcard(setId, flashcard.id) },
-                                onToggleLearned = {
-                                    viewModel.updateFlashcardLearnedStatus(
-                                        setId,
-                                        flashcard.id,
-                                        !flashcard.isLearned
-                                    )
-                                }
+                        StatCard(
+                            title = "Tổng số thẻ",
+                            value = "${set.flashcards.size}",
+                            color = Color(0xFF2196F3)
+                        )
+                        StatCard(
+                            title = "Đã học",
+                            value = "${set.flashcards.count { it.isLearned }}",
+                            color = Color(0xFF4CAF50)
+                        )
+                        StatCard(
+                            title = "Chưa học",
+                            value = "${set.flashcards.count { !it.isLearned }}",
+                            color = Color(0xFFF44336)
+                        )
+                    }
 
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (set.flashcards.isEmpty()) {
+                        // EMPTY STATE
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                "Chưa có thẻ nào",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = TextPrimary
                             )
-
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = { showAddDialog = true },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = ButtonPrimary
+                                ),
+                                shape = RoundedCornerShape(20.dp)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Thêm thẻ mới")
+                            }
                         }
-                        // Thêm item cuối cùng là Spacer
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))  // Điều chỉnh độ cao phù hợp
+                    } else {
+                        // LIST FLASHCARDS
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                                .padding(horizontal = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            items(set.flashcards) { flashcard: Flashcard ->
+                                FlashcardItemCard(
+                                    flashcard = flashcard,
+                                    onDelete = { viewModel.deleteFlashcard(setId, flashcard.id) },
+                                    onToggleLearned = {
+                                        viewModel.updateFlashcardLearnedStatus(
+                                            setId,
+                                            flashcard.id,
+                                            !flashcard.isLearned
+                                        )
+                                    }
+                                )
+                            }
+                            item {
+                                Spacer(modifier = Modifier.height(80.dp))
+                            }
+                        }
+                    }
+                }
+
+                // FLOATING ACTION BUTTON
+                if (set.flashcards.isNotEmpty()) {
+                    FloatingActionButton(
+                        onClick = { onStartStudy(setId) },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(16.dp),
+                        containerColor = ButtonPrimary
+                    ) {
+                        if (importProgress is ImportProgress.Loading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "Bắt đầu học")
                         }
                     }
                 }
             }
 
-            // FLOATING ACTION BUTTON để bắt đầu học
-            if (set.flashcards.isNotEmpty()) {
-                FloatingActionButton(
-                    onClick = { onStartStudy(setId) },
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(16.dp),
-                    containerColor = ButtonPrimary
-                ) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Bắt đầu học")
-                }
+            // ADD DIALOG
+            if (showAddDialog) {
+                AddFlashcardDialog(
+                    onDismiss = { showAddDialog = false },
+                    onAdd = { front, back, ipa ->
+                        viewModel.addFlashcard(setId, front, back, ipa)
+                        showAddDialog = false
+                    }
+                )
             }
-        }
 
-        if (showAddDialog) {
-            AddFlashcardDialog(
-                onDismiss = { showAddDialog = false },
-                onAdd = { front, back, ipa ->
-                    viewModel.addFlashcard(setId, front, back, ipa)
-                    showAddDialog = false
-                }
-            )
+            // IMPORT DIALOG
+            if (showImportDialog) {
+                ImportFromQuizletDialog(
+                    onDismiss = {
+                        showImportDialog = false
+                    },
+                    onImport = { cards ->
+                        viewModel.importFromQuizletContent(setId, cards)
+                    }
+                )
+            }
         }
     }
 }
 
+// Các composable phụ trợ giữ nguyên không thay đổi
 @Composable
 fun StatCard(
     title: String,
@@ -313,57 +372,4 @@ fun FlashcardItemCard(
             }
         )
     }
-}
-
-@Composable
-fun AddFlashcardDialog(
-    onDismiss: () -> Unit,
-    onAdd: (String, String, String) -> Unit
-) {
-    var front by remember { mutableStateOf("") }
-    var back by remember { mutableStateOf("") }
-    var ipa by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Thêm thẻ mới") },
-        text = {
-            Column {
-                OutlinedTextField(
-                    value = front,
-                    onValueChange = { front = it },
-                    label = { Text("Từ tiếng Anh") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = ipa,
-                    onValueChange = { ipa = it },
-                    label = { Text("Phiên âm IPA (tùy chọn)") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = back,
-                    onValueChange = { back = it },
-                    label = { Text("Nghĩa tiếng Việt") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 2
-                )
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onAdd(front, back, ipa) },
-                enabled = front.isNotBlank() && back.isNotBlank()
-            ) {
-                Text("Thêm")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Hủy")
-            }
-        }
-    )
 }

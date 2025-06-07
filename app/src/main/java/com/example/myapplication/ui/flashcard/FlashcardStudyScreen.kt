@@ -24,6 +24,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import androidx.compose.ui.platform.LocalContext
+import com.example.myapplication.ui.theme.ButtonSecondary
+import com.example.myapplication.ui.theme.MainColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,7 +92,7 @@ fun FlashcardStudyScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF3CFE2))
+                .background(MainColor)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -325,7 +327,7 @@ fun FlashcardView(
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)  // Thêm padding này
+            .padding(horizontal = 16.dp)
             .aspectRatio(1.4f)
             .graphicsLayer {
                 rotationY = flipAnimation.value
@@ -337,6 +339,9 @@ fun FlashcardView(
                 )
             },
         shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = ButtonSecondary
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
         Box(

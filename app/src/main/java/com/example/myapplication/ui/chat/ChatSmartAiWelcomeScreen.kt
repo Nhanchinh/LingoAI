@@ -82,7 +82,7 @@
 //    Box(
 //        modifier = Modifier
 //            .fillMaxSize()
-//            .background(Color(0xFFF3CFE2))
+//            .background(MainColor)
 //    ) {
 //        Column(
 //            modifier = Modifier
@@ -138,7 +138,7 @@
 //            Box(
 //                modifier = Modifier
 //                    .size(56.dp)
-//                    .background(Color(0xFFD9D9D9), shape = RoundedCornerShape(28.dp))
+//                    .background(ButtonSecondary, shape = RoundedCornerShape(28.dp))
 //                    .pointerInput(Unit) {
 //                        detectTapGestures(
 //                            onPress = {
@@ -232,6 +232,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.myapplication.R
+import com.example.myapplication.ui.theme.ButtonSecondary
+import com.example.myapplication.ui.theme.MainColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -304,7 +306,7 @@ fun ChatSmartAiWelcomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF3CFE2))
+            .background(MainColor)
     ) {
         Column(
             modifier = Modifier
@@ -362,14 +364,7 @@ fun ChatSmartAiWelcomeScreen(
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .background(
-                        color = when {
-                            isRecording -> Color(0xFFE57373) // Đỏ nhạt khi recording
-                            isProcessingAudio -> Color(0xFF81C784) // Xanh nhạt khi processing
-                            else -> Color(0xFFD9D9D9) // Màu mặc định
-                        },
-                        shape = RoundedCornerShape(28.dp)
-                    )
+                    .background(ButtonSecondary, shape = RoundedCornerShape(28.dp))
                     .pointerInput(Unit) {
                         detectTapGestures(
                             onPress = {

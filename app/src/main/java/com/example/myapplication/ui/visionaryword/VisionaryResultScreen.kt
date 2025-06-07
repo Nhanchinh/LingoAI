@@ -1,4 +1,3 @@
-
 package com.example.myapplication.ui.visionaryword
 
 import android.content.Context
@@ -29,6 +28,8 @@ import java.io.File
 // Thêm imports cho scroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.example.myapplication.ui.theme.ButtonPrimary
+import com.example.myapplication.ui.theme.MainColor
 
 fun Context.bitmapToFile(bitmap: Bitmap): File {
     val file = File(cacheDir, "temp_image.jpg")
@@ -95,7 +96,7 @@ fun VisionaryResultScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8CFEA))
+            .background(MainColor)
     ) {
         // Thêm verticalScroll để có thể cuộn
         Column(
@@ -169,7 +170,7 @@ fun VisionaryResultScreen(
                                 Icon(
                                     Icons.Default.PlayArrow,
                                     contentDescription = "Play audio",
-                                    tint = Color(0xFFE48ED4)
+                                    tint = ButtonPrimary
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
@@ -179,7 +180,7 @@ fun VisionaryResultScreen(
                                 Icon(
                                     Icons.Default.Add,
                                     contentDescription = "Save word",
-                                    tint = Color(0xFFE48ED4)
+                                    tint = ButtonPrimary
                                 )
                             }
                         }
@@ -191,7 +192,7 @@ fun VisionaryResultScreen(
 
             Button(
                 onClick = onRetake,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE48ED4)),
+                colors = ButtonDefaults.buttonColors(containerColor = ButtonPrimary),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth(0.7f)

@@ -19,6 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
+import com.example.myapplication.ui.theme.ButtonPrimary
+import com.example.myapplication.ui.theme.MainColor
+import com.example.myapplication.ui.theme.TextPrimary
 
 @Composable
 fun FlashcardScreen(
@@ -42,7 +45,7 @@ fun FlashcardScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF3CFE2)) // Màu giống WordGenie
+            .background(MainColor)  // Thay Color(0xFFF3CFE2)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -86,14 +89,14 @@ fun FlashcardScreen(
                 text = "Flashcards",
                 fontSize = 36.sp, // Size giống History
                 fontWeight = FontWeight.Bold,
-                color = Color.Black,
+                color = TextPrimary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
             Text(
                 text = "Tạo và học từ vựng với thẻ ghi nhớ",
                 fontSize = 18.sp,
-                color = Color.Black,
+                color = TextPrimary,
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
@@ -115,14 +118,14 @@ fun FlashcardScreen(
                         "Chưa có bộ flashcard nào",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Black,
+                        color = TextPrimary,  // Thay Color.Black
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     
                     Button(
                         onClick = { showCreateDialog = true },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE48ED4) // Màu giống VisionaryWords
+                            containerColor = ButtonPrimary  // Thay Color(0xFFE48ED4)
                         ),
                         shape = RoundedCornerShape(20.dp)
                     ) {
@@ -205,13 +208,13 @@ fun FlashcardSetCard(
                     text = set.name,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Medium,
-                    color = Color.Black
+                    color = TextPrimary
                 )
                 if (set.description.isNotEmpty()) {
                     Text(
                         text = set.description,
                         fontSize = 14.sp,
-                        color = Color.Black.copy(alpha = 0.7f),
+                        color = TextPrimary.copy(alpha = 0.7f),
                         modifier = Modifier.padding(top = 2.dp)
                     )
                 }
@@ -224,7 +227,7 @@ fun FlashcardSetCard(
                     Text(
                         text = "${set.flashcards.size} thẻ",
                         fontSize = 12.sp,
-                        color = Color.Black.copy(alpha = 0.6f)
+                        color = TextPrimary.copy(alpha = 0.6f)
                     )
                     
                     if (set.flashcards.isNotEmpty()) {
@@ -242,7 +245,7 @@ fun FlashcardSetCard(
                 Icon(
                     Icons.Default.Delete,
                     contentDescription = "Xóa",
-                    tint = Color.Black
+                    tint = TextPrimary
                 )
             }
         }

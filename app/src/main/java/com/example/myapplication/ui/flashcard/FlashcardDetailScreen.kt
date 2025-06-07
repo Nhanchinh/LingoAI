@@ -21,6 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myapplication.R
+import com.example.myapplication.ui.theme.ButtonPrimary
+import com.example.myapplication.ui.theme.ButtonSecondary
+import com.example.myapplication.ui.theme.MainColor
+import com.example.myapplication.ui.theme.TextPrimary
 
 @Composable
 fun FlashcardDetailScreen(
@@ -43,7 +47,7 @@ fun FlashcardDetailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF3CFE2))
+                .background(MainColor)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -78,7 +82,7 @@ fun FlashcardDetailScreen(
                     text = set.name,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black,
+                    color = TextPrimary,
                     modifier = Modifier.padding(vertical = 16.dp)
                 )
 
@@ -119,14 +123,14 @@ fun FlashcardDetailScreen(
                             "Bộ flashcard trống",
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color.Black,
+                            color = TextPrimary,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         
                         Button(
                             onClick = { showAddDialog = true },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFFE48ED4)
+                                containerColor = ButtonPrimary
                             ),
                             shape = RoundedCornerShape(20.dp)
                         ) {
@@ -174,7 +178,7 @@ fun FlashcardDetailScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .padding(16.dp),
-                    containerColor = Color(0xFFE48ED4)
+                    containerColor = ButtonPrimary
                 ) {
                     Icon(Icons.Default.PlayArrow, contentDescription = "Bắt đầu học")
                 }
@@ -237,7 +241,7 @@ fun FlashcardItemCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFD9D9D9)
+            containerColor = ButtonSecondary
         )
     ) {
         Row(

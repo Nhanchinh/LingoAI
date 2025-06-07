@@ -444,6 +444,9 @@ import com.example.myapplication.R
 import com.example.myapplication.api.ApiService
 import com.example.myapplication.ui.chat.AudioManager
 import com.example.myapplication.ui.common.AudioScreenWrapper
+import com.example.myapplication.ui.theme.ButtonPrimary
+import com.example.myapplication.ui.theme.ButtonSecondary
+import com.example.myapplication.ui.theme.MainColor
 
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
@@ -556,7 +559,7 @@ fun ChatSmartAiChatScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFF3CFE2))
+                .background(MainColor)
         ) {
             Column(
                 modifier = Modifier
@@ -633,9 +636,9 @@ fun ChatSmartAiChatScreen(
                                 .size(56.dp)
                                 .background(
                                     color = when {
-                                        isRecording -> Color(0xFFE57373) // Màu đỏ nhạt khi recording
-                                        isProcessingAudio -> Color(0xFF81C784) // Màu xanh nhạt khi processing
-                                        else -> Color(0xFFD9D9D9) // Màu mặc định
+                                        isRecording -> ButtonPrimary
+                                        isProcessingAudio -> ButtonPrimary
+                                        else -> ButtonSecondary
                                     },
                                     shape = RoundedCornerShape(28.dp)
                                 )

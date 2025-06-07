@@ -39,6 +39,10 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.animateContentSize
+import com.example.myapplication.ui.theme.MainColor
+import com.example.myapplication.ui.theme.TextFieldBackground
+import com.example.myapplication.ui.theme.ButtonPrimary
+import com.example.myapplication.ui.theme.AppText
 
 // WordDictionary object (giữ nguyên)
 object WordDictionary {
@@ -132,7 +136,7 @@ fun WordGenieScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF3CFE2))
+            .background(MainColor)
     ) {
         IconButton(
             onClick = onBack,
@@ -204,8 +208,8 @@ fun WordGenieScreen(
                 },
                 shape = RoundedCornerShape(24.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFD17878),
-                    contentColor = Color.White
+                    containerColor = ButtonPrimary,
+                    contentColor = AppText
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -235,7 +239,7 @@ fun AutoSuggestTextFieldWithDropdown(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFD9D9D9), RoundedCornerShape(16.dp))
+                .background(TextFieldBackground, RoundedCornerShape(16.dp))
                 .padding(16.dp)
         ) {
             // Background suggestion text

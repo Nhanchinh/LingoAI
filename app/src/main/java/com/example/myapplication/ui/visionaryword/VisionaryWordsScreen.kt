@@ -20,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.myapplication.ui.common.BottomNavBar
+import com.example.myapplication.ui.theme.ButtonPrimary
+import com.example.myapplication.ui.theme.MainColor
 
 enum class VisionaryStep { Welcome, Camera, Result }
 
@@ -67,7 +69,7 @@ fun VisionaryWelcomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8CFEA))
+            .background(MainColor)
     ) {
         Column(
             modifier = Modifier
@@ -100,7 +102,7 @@ fun VisionaryWelcomeScreen(
             Spacer(modifier = Modifier.height(32.dp))
             Button(
                 onClick = onOpenCamera,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFE48ED4)),
+                colors = ButtonDefaults.buttonColors(containerColor = ButtonPrimary),
                 shape = RoundedCornerShape(20.dp)
             ) {
                 Text("Open camera")

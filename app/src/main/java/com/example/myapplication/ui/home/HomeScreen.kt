@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 
 import androidx.compose.foundation.Image
@@ -27,6 +28,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.myapplication.ui.theme.MainColor
+import com.example.myapplication.ui.theme.TextPrimary
+import com.example.myapplication.ui.theme.HomeButtonBackground
+import com.example.myapplication.ui.theme.HomeButtonText
+import com.example.myapplication.ui.theme.HomeSubtitleText
 
 
 //
@@ -177,7 +182,7 @@ fun HomeScreen(
     onWordGenieClick: () -> Unit = {},
     onChatSmartAIClick: () -> Unit = {},
     onVisionaryWordsClick: () -> Unit = {},
-    onFlashcardClick: () -> Unit = {}, // THÊM DÒNG NÀY
+    onFlashcardClick: () -> Unit = {},
     onHistoryClick: () -> Unit = {}
 ) {
     Box(
@@ -190,20 +195,19 @@ fun HomeScreen(
             onClick = onProfileClick,
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding( 30.dp)
+                .padding(30.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = "User",
-                tint = Color.Black,
+                tint = TextPrimary,
                 modifier = Modifier.size(36.dp)
             )
         }
 
         // Nội dung chính căn giữa
         Column(
-            modifier = Modifier
-                .align(Alignment.Center), // Căn giữa cả dọc và ngang
+            modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
@@ -214,14 +218,14 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "LingoAI",
-                color = Color.Black,
+                color = TextPrimary,
                 fontWeight = FontWeight.ExtraBold,
                 style = MaterialTheme.typography.headlineLarge
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Hãy bắt đầu học nào!",
-                color = Color(0xFFD17878),
+                color = HomeSubtitleText,
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium
             )
@@ -233,7 +237,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
             HomeButton("Visionary Words", onClick = onVisionaryWordsClick)
             Spacer(modifier = Modifier.height(16.dp))
-            HomeButton("Flashcard", onClick = onFlashcardClick) // THÊM DÒNG NÀY
+            HomeButton("Flashcard", onClick = onFlashcardClick)
             Spacer(modifier = Modifier.height(16.dp))
             HomeButton("History", onClick = onHistoryClick)
         }
@@ -246,17 +250,17 @@ fun HomeButton(text: String, onClick: () -> Unit) {
         onClick = onClick,
         shape = RoundedCornerShape(24.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFFD17878), // Màu hồng đậm
-            contentColor = Color.White
+            containerColor = HomeButtonBackground,
+            contentColor = HomeButtonText
         ),
         modifier = Modifier
-            .fillMaxWidth(0.7f)
+            .width(280.dp)
             .height(56.dp)
     ) {
         Text(
             text = text,
-            fontWeight = FontWeight.ExtraBold,
-            style = MaterialTheme.typography.titleLarge
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Bold
         )
     }
 }

@@ -23,13 +23,15 @@ fun BottomNavBar(currentRoute: String, onNavItemSelected: (String) -> Unit, modi
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp),
-        horizontalArrangement = Arrangement.SpaceEvenly
+
+        .padding(vertical = 4.dp),
+    horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         NavBarItem("W", "word_genie", currentRoute, onNavItemSelected)
         NavBarItem("C", "chat_smart_ai", currentRoute, onNavItemSelected)
         NavBarItem("V", "visionary_words", currentRoute, onNavItemSelected)
         NavBarItem("H", "history", currentRoute, onNavItemSelected)
+        NavBarItem("F", "flashcard", currentRoute, onNavItemSelected) // THÊM DÒNG NÀY
     }
 }
 

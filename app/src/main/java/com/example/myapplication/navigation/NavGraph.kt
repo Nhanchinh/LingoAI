@@ -1,275 +1,44 @@
-//
-//package com.example.myapplication.navigation
-//
-//import android.os.Looper
-//import android.util.Log
-//import android.widget.Toast
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.remember
-//import androidx.compose.ui.platform.LocalContext
-//import androidx.navigation.NavHostController
-//import androidx.navigation.compose.NavHost
-//import androidx.navigation.compose.composable
-//import androidx.navigation.compose.rememberNavController
-//import com.example.myapplication.api.ApiService
-//import com.example.myapplication.ui.auth.RegisterScreen
-//import com.example.myapplication.ui.chat.ChatSmartAiWelcomeScreen
-//import com.example.myapplication.ui.chat.RecordingManager
-//import com.example.myapplication.ui.screens.*
-//import com.example.myapplication.ui.components.*
-//import com.example.myapplication.ui.history.HistoryScreen
-//import com.example.myapplication.ui.home.HomeScreen
-//import com.example.myapplication.ui.visionaryword.VisionaryWordsScreen
-//import com.example.myapplication.ui.wordgenie.WordDetailScreen
-//import com.example.myapplication.ui.wordgenie.WordGenieScreen
-//import java.util.logging.Handler
-//
-//object Routes {
-//    // Auth routes
-//    const val SPLASH = "splash"
-//    const val LOGIN = "login"
-//    const val REGISTER = "register"
-//
-//    // Main features
-//    const val HOME = "home"
-//
-//    // Feature routes (sử dụng cho bottom navigation)
-//    const val WORD_GENIE = "word_genie"
-//    const val CHAT_SMART_AI = "chat_smart_ai" // Đã sửa route này
-//    const val VISIONARY_WORDS = "visionary_words" // Đã sửa route này
-//    const val HISTORY = "history"
-//
-//    // Sub-routes
-//    const val VOCAB_INFO = "vocab_info"
-//    const val CHAT_SMART_AI_WELCOME = "chat_smart_ai_welcome"
-//    const val CHAT_SMART_AI_CHAT = "chat_smart_ai_chat"
-//}
-//
-//@Composable
-//fun AppNavGraph(
-//    navController: NavHostController = rememberNavController(),
-//    startDestination: String = Routes.LOGIN
-//) {
-//    val context = LocalContext.current
-//    val recordingManager = remember { RecordingManager(context) }
-//
-//    NavHost(navController = navController, startDestination = startDestination) {
-//        // Auth flow
-//        composable(Routes.LOGIN) {
-//            LoginScreen(
-//                onLoginSuccess = {
-//                    navController.navigate(Routes.HOME) {
-//                        popUpTo(Routes.LOGIN) { inclusive = true }
-//                    }
-//                },
-//                onNavigateToRegister = {
-//                    navController.navigate(Routes.REGISTER)
-//                }
-//            )
-//        }
-//
-//
-//        composable(Routes.REGISTER) {
-//            RegisterScreen(
-//                onRegisterSuccess = {
-//                    navController.navigate(Routes.HOME) {
-//                        popUpTo(Routes.REGISTER) { inclusive = true }
-//                    }
-//                },
-//                onBackToLogin = { navController.navigate(Routes.LOGIN) }
-//            )
-//        }
-//
-//        // Main screen
-//        composable(Routes.HOME) {
-//            HomeScreen(
-//                onWordGenieClick = { navController.navigate(Routes.WORD_GENIE) },
-//                onChatSmartAIClick = { navController.navigate(Routes.CHAT_SMART_AI) },
-//                onVisionaryWordsClick = { navController.navigate(Routes.VISIONARY_WORDS) },
-//                onHistoryClick = { navController.navigate(Routes.HISTORY) }
-//            )
-//        }
-//
-//        // Word Genie flow
-//        composable(Routes.WORD_GENIE) {
-//            WordGenieScreen(
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onNavItemSelected = { route -> handleBottomNavigation(navController, route) },
-//                onSearchComplete = {
-//                        word ->
-//                    // Điều hướng đến màn hình vocab_info và truyền từ
-//                    navController.navigate("${Routes.VOCAB_INFO}/$word")
-//
-//                }
-//            )
-//        }
-//
-//        composable(
-//            route = "${Routes.VOCAB_INFO}/{word}"
-//        ) { backStackEntry ->
-//            val word = backStackEntry.arguments?.getString("word") ?: ""
-//            WordDetailScreen(
-//                word = word,
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onPlayAudio =  { word -> recordingManager.playAudioFromText(word) },
-//                onSave = { wordToSave ->
-//                    ApiService.addVocabulary(wordToSave, null) { code, _ ->
-//                        if (code == 200) {
-//                            Toast.makeText(context, "success", Toast.LENGTH_SHORT).show()
-//                        } else {
-//                            // Xử lý lỗi, ví dụ:
-//                            Toast.makeText(context, "Lưu từ thất bại", Toast.LENGTH_SHORT).show()
-//                        }
-//                    }
-//                }
-//            )
-//        }
-//
-//
-//
-//
-//
-//
-//
-//        // Chat Smart AI flow - chính là route "chat_smart_ai"
-//        composable(Routes.CHAT_SMART_AI) {
-//            ChatSmartAiWelcomeScreen(
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onRecordStart = {
-//                    recordingManager.startRecording()
-//                },
-//                onRecordStop = { onResult ->
-//                    recordingManager.stopRecording { transcription ->
-//                        transcription?.let { onResult(it) }
-//                    }
-//                },
-//                onNavigate = {
-//                        sentence ->
-//                    navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence")
-//                },
-//                onNavItemSelected = { route -> handleBottomNavigation(navController, route) }
-//            )
-//        }
-//
-//        // Sub-routes của Chat Smart AI
-//        composable(route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}"
-//        ) { backStackEntry ->
-//
-//            val sentence = backStackEntry.arguments?.getString("sentence") ?: ""
-//            ChatSmartAiChatScreen(
-//                sentence = sentence,
-//                onRecordStart = {
-//                    recordingManager.startRecording()
-//                },
-//                onRecordStop = { onResult ->
-//                    recordingManager.stopRecording { transcription ->
-//                        transcription?.let { onResult(it) }
-//                    }
-//                },
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onPlayAudio =  { word -> recordingManager.playAudioFromText(word) }
-//            )
-//        }
-//
-//        // Visionary Words flow - CHỈ GIỮ LẠI ĐOẠN NÀY VÀ XÓA ĐỊNH NGHĨA THỨ HAI
-//        composable(Routes.VISIONARY_WORDS) {
-//            VisionaryWordsScreen(
-//                onBack = { navController.popBackStack() },
-//                onOpenCamera = {
-//                    // Navigation to camera screen
-//                },
-//                onNavItemSelected = { route -> handleBottomNavigation(navController, route) },
-//                onPlayAudio = { word -> recordingManager.playAudioFromText(word) },
-//                onSaveWord = { wordToSave ->
-//                    ApiService.addVocabulary(wordToSave, null) { code, _ ->
-//                        if (code == 200) {
-//                            Toast.makeText(context, "Đã lưu từ vựng", Toast.LENGTH_SHORT).show()
-//                        } else {
-//                            Toast.makeText(context, "Lưu từ thất bại", Toast.LENGTH_SHORT).show()
-//                        }
-//                    }
-//                }
-//            )
-//        }
-//
-//        // History flow
-//        composable(Routes.HISTORY) {
-//            HistoryScreen(
-//                onBack = {
-//                    navController.popBackStack()
-//                },
-//                onBottomNavClicked = { route -> handleBottomNavigation(navController, route) }
-//            )
-//        }
-//    }
-//}
-//
-//
-//
-//// Hàm xử lý bottom navigation
-//private fun handleBottomNavigation(navController: NavHostController, route: String) {
-//    // Điều quan trọng là dùng launchSingleTop và popUpTo
-//    navController.navigate(route) {
-//        // Xóa tất cả các màn hình khác trong back stack trừ HOME
-//        popUpTo(Routes.HOME) { saveState = true }
-//        // Đảm bảo không tạo nhiều instance của cùng một màn hình
-//        launchSingleTop = true
-//        // Lưu trạng thái khi chuyển đổi giữa các tab
-//        restoreState = true
-//    }
-//}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 package com.example.myapplication.navigation
 
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.myapplication.api.ApiService
-import com.example.myapplication.ui.auth.ProfileScreen
+// Thay đổi các imports này
+import com.example.myapplication.ui.screens.LoginScreen
+
 import com.example.myapplication.ui.auth.RegisterScreen
+
 import com.example.myapplication.ui.chat.ChatSmartAiWelcomeScreen
 import com.example.myapplication.ui.chat.RecordingManager
-import com.example.myapplication.ui.screens.*
-import com.example.myapplication.ui.components.*
+import com.example.myapplication.ui.common.MainScaffold
 import com.example.myapplication.ui.history.HistoryScreen
 import com.example.myapplication.ui.home.HomeScreen
 import com.example.myapplication.ui.visionaryword.VisionaryWordsScreen
 import com.example.myapplication.ui.wordgenie.WordDetailScreen
 import com.example.myapplication.ui.wordgenie.WordGenieScreen
+import com.example.myapplication.ui.auth.ProfileScreen
+import com.example.myapplication.ui.chat.ChatSmartAiChatScreen
+import com.example.myapplication.ui.flashcard.FlashcardDetailScreen
+import com.example.myapplication.ui.flashcard.FlashcardScreen
+import com.example.myapplication.ui.flashcard.FlashcardStudyScreen
 
 object Routes {
     // Auth routes
@@ -279,20 +48,26 @@ object Routes {
 
     // Main features
     const val HOME = "home"
-
-    // Thêm route Profile
-    const val PROFILE = "profile"
-
-    // Feature routes (sử dụng cho bottom navigation)
+    const val PROFILE = "profile"  // Thêm route này
+    // Feature routes
     const val WORD_GENIE = "word_genie"
-    const val CHAT_SMART_AI = "chat_smart_ai" // Đã sửa route này
-    const val VISIONARY_WORDS = "visionary_words" // Đã sửa route này
+    const val CHAT_SMART_AI = "chat_smart_ai"
+    const val VISIONARY_WORDS = "visionary_words"
     const val HISTORY = "history"
+    const val FLASHCARD = "flashcard" // THÊM DÒNG NÀY
+
+
+
 
     // Sub-routes
     const val VOCAB_INFO = "vocab_info"
     const val CHAT_SMART_AI_WELCOME = "chat_smart_ai_welcome"
     const val CHAT_SMART_AI_CHAT = "chat_smart_ai_chat"
+
+    const val FLASHCARD_DETAIL = "flashcard_detail" // THÊM DÒNG NÀY
+    const val FLASHCARD_STUDY = "flashcard_study"   // THÊM DÒNG NÀY
+
+
 }
 
 @Composable
@@ -301,210 +76,414 @@ fun AppNavGraph(
     startDestination: String = Routes.LOGIN,
     isLoggedIn: Boolean = false
 ) {
-    // Xác định điểm bắt đầu dựa trên trạng thái đăng nhập
-    val actualStartDestination = if (isLoggedIn) Routes.HOME else Routes.LOGIN
-
     val context = LocalContext.current
     val recordingManager = remember { RecordingManager(context) }
 
-    NavHost(navController = navController, startDestination = actualStartDestination) {
-        // Auth flow
-        composable(Routes.LOGIN) {
-            LoginScreen(
-                onLoginSuccess = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.LOGIN) { inclusive = true }
-                    }
+    // Theo dõi route hiện tại
+    val currentBackStackEntry by navController.currentBackStackEntryFlow.collectAsState(initial = navController.currentBackStackEntry)
+    val currentRoute = currentBackStackEntry?.destination?.route ?: startDestination
+
+    MainScaffold(
+        navController = navController,
+        currentRoute = currentRoute
+    ) {
+        NavHost(
+
+            navController = navController,
+            startDestination = if (isLoggedIn) Routes.HOME else startDestination
+        ) {
+            // Auth flow
+            composable(
+                route = Routes.LOGIN,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
                 },
-                onNavigateToRegister = {
-                    navController.navigate(Routes.REGISTER)
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                },
+                popEnterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
                 }
-            )
-        }
-
-
-        composable(Routes.REGISTER) {
-            RegisterScreen(
-                onRegisterSuccess = {
-                    navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.REGISTER) { inclusive = true }
+            ) {
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.LOGIN) { inclusive = true }
+                        }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate(Routes.REGISTER)
                     }
-                },
-                onBackToLogin = { navController.navigate(Routes.LOGIN) }
-            )
-        }
+                )
+            }
 
-        // Main screen
-        composable(Routes.HOME) {
-            HomeScreen(
-                onProfileClick = { navController.navigate(Routes.PROFILE) },
-                onWordGenieClick = { navController.navigate(Routes.WORD_GENIE) },
-                onChatSmartAIClick = { navController.navigate(Routes.CHAT_SMART_AI) },
-                onVisionaryWordsClick = { navController.navigate(Routes.VISIONARY_WORDS) },
-                onHistoryClick = { navController.navigate(Routes.HISTORY) }
-            )
-        }
-        // Profile screen
-        composable(Routes.PROFILE) {
-            ProfileScreen(
-                onBack = { navController.popBackStack() },
-                onLogout = {
-                    // Chuyển về màn hình đăng nhập sau khi đăng xuất
-                    navController.navigate(Routes.LOGIN) {
-                        popUpTo(Routes.HOME) { inclusive = true }
+            composable(
+                route = Routes.REGISTER,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                },
+                popEnterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                popExitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                RegisterScreen(
+                    onRegisterSuccess = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.REGISTER) { inclusive = true }
+                        }
+                    },
+                    onBackToLogin = { navController.navigate(Routes.LOGIN) }
+                )
+            }
+
+            composable(
+                route = Routes.HOME,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Up,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Down,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                HomeScreen(
+                    onWordGenieClick = { navController.navigate(Routes.WORD_GENIE) },
+                    onChatSmartAIClick = { navController.navigate(Routes.CHAT_SMART_AI) },
+                    onVisionaryWordsClick = { navController.navigate(Routes.VISIONARY_WORDS) },
+                    onHistoryClick = { navController.navigate(Routes.HISTORY) } ,
+                    onProfileClick = { navController.navigate(Routes.PROFILE) },  // Thêm dòng này
+                    onFlashcardClick = { navController.navigate(Routes.FLASHCARD) }, // THÊM DÒNG NÀY
+                )
+            }
+
+
+            // Thêm route cho Profile
+            composable(
+                route = Routes.PROFILE,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                ProfileScreen(
+                    onBack = { navController.popBackStack() },
+                    onLogout = {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(navController.graph.id) { inclusive = true }
+                        }
                     }
-                }
-            )
-        }
+                )
+            }
 
-        // Word Genie flow
-        composable(Routes.WORD_GENIE) {
-            WordGenieScreen(
-                onBack = {
-                    navController.popBackStack()
-                },
-                onNavItemSelected = { route -> handleBottomNavigation(navController, route) },
-                onSearchComplete = { word ->
-                    // Điều hướng đến màn hình vocab_info và truyền từ
-                    navController.navigate("${Routes.VOCAB_INFO}/$word")
-                }
-            )
-        }
 
-        composable(
-            route = "${Routes.VOCAB_INFO}/{word}"
-        ) { backStackEntry ->
-            val word = backStackEntry.arguments?.getString("word") ?: ""
-            WordDetailScreen(
-                word = word,
-                onBack = {
-                    navController.popBackStack()
+
+            composable(
+                route = Routes.WORD_GENIE,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
                 },
-                onPlayAudio = { word -> recordingManager.playAudioFromText(word) },
-                onSave = { wordToSave ->
-                    try {
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                WordGenieScreen(
+                    onBack = { navController.popBackStack() },
+                    onSearchComplete = { word ->
+                        navController.navigate("${Routes.VOCAB_INFO}/$word")
+                    }
+                )
+            }
+
+            composable(
+                route = "${Routes.VOCAB_INFO}/{word}",
+                arguments = listOf(
+                    navArgument("word") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val word = backStackEntry.arguments?.getString("word") ?: ""
+                WordDetailScreen(
+                    word = word,
+                    onBack = { navController.popBackStack() },
+                    onPlayAudio = { text -> recordingManager.playAudioFromText(text) },
+                    onSave = { wordToSave ->
                         ApiService.addVocabulary(wordToSave, null) { code, _ ->
-                            Handler(Looper.getMainLooper()).post {
-                                if (code == 200||code ==201) {
-                                    Toast.makeText(context, "Đã lưu từ vựng", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Lưu từ thất bại", Toast.LENGTH_SHORT).show()
-                                }
+                            if (code == 200) {
+                                Toast.makeText(context, "Đã lưu từ vựng", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Lưu từ thất bại", Toast.LENGTH_SHORT).show()
                             }
                         }
-                    } catch (e: Exception) {
-                        Log.e("NavGraph", "Error saving vocabulary: ${e.message}")
-                        Handler(Looper.getMainLooper()).post {
-                            Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
                     }
-                }
-            )
-        }
+                )
+            }
 
-        // Visionary Words flow
-        composable(Routes.VISIONARY_WORDS) {
-            VisionaryWordsScreen(
-                onBack = { navController.popBackStack() },
-                onOpenCamera = {
-                    // Navigation to camera screen
+            composable(
+                route = Routes.CHAT_SMART_AI,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
                 },
-                onNavItemSelected = { route -> handleBottomNavigation(navController, route) },
-                onPlayAudio = { word ->
-                    try {
-                        recordingManager.playAudioFromText(word)
-                    } catch (e: Exception) {
-                        Log.e("NavGraph", "Error playing audio: ${e.message}")
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                ChatSmartAiWelcomeScreen(
+                    onBack = { navController.popBackStack() },
+                    onRecordStart = { recordingManager.startRecording() },
+                    onRecordStop = { callback ->
+                        recordingManager.stopRecording { transcription ->
+                            transcription?.let { callback(it) }
+                        }
+                    },
+                    onNavigate = { sentence ->
+                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence")
                     }
+                )
+            }
+
+            composable(
+                route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}",
+                arguments = listOf(
+                    navArgument("sentence") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
                 },
-                onSaveWord = { wordToSave ->
-                    try {
-                        ApiService.addVocabulary(wordToSave, null) { code, response ->
-                            Handler(Looper.getMainLooper()).post {
-                                try {
-                                    if (code == 200) {
-                                        Toast.makeText(context, "Đã lưu từ vựng", Toast.LENGTH_SHORT).show()
-                                    } else {
-                                        Toast.makeText(context, "Lưu từ thất bại", Toast.LENGTH_SHORT).show()
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("NavGraph", "Error showing toast: ${e.message}")
-                                }
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val sentence = backStackEntry.arguments?.getString("sentence") ?: ""
+                ChatSmartAiChatScreen(
+                    sentence = sentence,
+                    onRecordStart = { recordingManager.startRecording() },
+                    onRecordStop = { callback ->
+                        recordingManager.stopRecording { transcription ->
+                            transcription?.let { callback(it) }
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
+                    onPlayAudio = { text -> recordingManager.playAudioFromText(text) }
+                )
+            }
+
+            composable(
+                route = Routes.VISIONARY_WORDS,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                VisionaryWordsScreen(
+                    onBack = { navController.popBackStack() },
+                    onOpenCamera = { /* Navigation to camera screen */ },
+                    onPlayAudio = { text -> recordingManager.playAudioFromText(text) },
+                    onSaveWord = { wordToSave ->
+                        ApiService.addVocabulary(wordToSave, null) { code, _ ->
+                            if (code == 200) {
+                                Toast.makeText(context, "Đã lưu từ vựng", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Lưu từ thất bại", Toast.LENGTH_SHORT).show()
                             }
                         }
-                    } catch (e: Exception) {
-                        Log.e("NavGraph", "Error calling addVocabulary: ${e.message}")
-                        Handler(Looper.getMainLooper()).post {
-                            Toast.makeText(context, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
                     }
+                )
+            }
+
+            composable(
+                route = Routes.HISTORY,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
                 }
-            )
-        }
+            ) {
+                HistoryScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
 
-        // Chat Smart AI flow - chính là route "chat_smart_ai"
-        composable(Routes.CHAT_SMART_AI) {
-            ChatSmartAiWelcomeScreen(
-                onBack = {
-                    navController.popBackStack()
+            // Flashcard flow
+            // Flashcard flow
+            composable(
+                route = Routes.FLASHCARD,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
                 },
-                onRecordStart = {
-                    recordingManager.startRecording()
-                },
-                onRecordStop = { onResult ->
-                    recordingManager.stopRecording { transcription ->
-                        transcription?.let { onResult(it) }
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                FlashcardScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavItemSelected = { route ->
+                        // Xóa handleBottomNavigation, thay bằng direct navigation
+                        navController.navigate(route) {
+                            popUpTo(Routes.HOME) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onCreateSet = {
+                        // Logic tạo set có thể handle trong screen
+                    },
+                    onOpenSet = { setId ->
+                        navController.navigate("${Routes.FLASHCARD_DETAIL}/$setId")
                     }
-                },
-                onNavigate = { sentence ->
-                    navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence")
-                },
-                onNavItemSelected = { route -> handleBottomNavigation(navController, route) }
-            )
-        }
+                )
+            }
 
-        // Sub-routes của Chat Smart AI
-        composable(route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}"
-        ) { backStackEntry ->
-            val sentence = backStackEntry.arguments?.getString("sentence") ?: ""
-            ChatSmartAiChatScreen(
-                sentence = sentence,
-                onRecordStart = {
-                    recordingManager.startRecording()
+            composable(
+                route = "${Routes.FLASHCARD_DETAIL}/{setId}",
+                arguments = listOf(
+                    navArgument("setId") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
                 },
-                onRecordStop = { onResult ->
-                    recordingManager.stopRecording { transcription ->
-                        transcription?.let { onResult(it) }
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val setId = backStackEntry.arguments?.getString("setId") ?: ""
+                FlashcardDetailScreen(
+                    setId = setId,
+                    onBack = { navController.popBackStack() },
+                    onStartStudy = { studySetId ->
+                        navController.navigate("${Routes.FLASHCARD_STUDY}/$studySetId")
                     }
-                },
-                onBack = {
-                    navController.popBackStack()
-                },
-                onPlayAudio = { word -> recordingManager.playAudioFromText(word) }
-            )
-        }
+                )
+            }
 
-        // History flow
-        composable(Routes.HISTORY) {
-            HistoryScreen(
-                onBack = {
-                    navController.popBackStack()
+            composable(
+                route = "${Routes.FLASHCARD_STUDY}/{setId}",
+                arguments = listOf(
+                    navArgument("setId") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
                 },
-                onBottomNavClicked = { route -> handleBottomNavigation(navController, route) }
-            )
-        }
-    }
-}
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val setId = backStackEntry.arguments?.getString("setId") ?: ""
+                FlashcardStudyScreen(
+                    setId = setId,
+                    onBack = { navController.popBackStack() },
+                    onPlayAudio = { word -> recordingManager.playAudioFromText(word) }
+                )
+            }
 
-// Hàm xử lý bottom navigation
-private fun handleBottomNavigation(navController: NavHostController, route: String) {
-    // Điều quan trọng là dùng launchSingleTop và popUpTo
-    navController.navigate(route) {
-        // Xóa tất cả các màn hình khác trong back stack trừ HOME
-        popUpTo(Routes.HOME) { saveState = true }
-        // Đảm bảo không tạo nhiều instance của cùng một màn hình
-        launchSingleTop = true
-        // Lưu trạng thái khi chuyển đổi giữa các tab
-        restoreState = true
+
+        }
     }
 }

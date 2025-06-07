@@ -71,7 +71,7 @@ fun VisionaryWelcomeScreen(
     ) {
         Column(
             modifier = Modifier
-                .padding(start = 16.dp, top = 40.dp)
+                .padding( top = 16.dp)
         ) {
             IconButton(onClick = onBack) {
                 Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(32.dp))
@@ -109,12 +109,12 @@ fun VisionaryWelcomeScreen(
             }
         }
 
-        // Navbar ở cuối màn hình
-        BottomNavBar(
-            currentRoute = "visionary_words",
-            onNavItemSelected = onNavItemSelected,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+//        // Navbar ở cuối màn hình
+//        BottomNavBar(
+//            currentRoute = "visionary_words",
+//            onNavItemSelected = onNavItemSelected,
+//            modifier = Modifier.align(Alignment.BottomCenter)
+//        )
     }
 }
 

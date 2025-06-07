@@ -177,6 +177,7 @@ fun HomeScreen(
     onWordGenieClick: () -> Unit = {},
     onChatSmartAIClick: () -> Unit = {},
     onVisionaryWordsClick: () -> Unit = {},
+    onFlashcardClick: () -> Unit = {}, // THÊM DÒNG NÀY
     onHistoryClick: () -> Unit = {}
 ) {
     Box(
@@ -231,6 +232,8 @@ fun HomeScreen(
             HomeButton("ChatSmart AI", onClick = onChatSmartAIClick)
             Spacer(modifier = Modifier.height(16.dp))
             HomeButton("Visionary Words", onClick = onVisionaryWordsClick)
+            Spacer(modifier = Modifier.height(16.dp))
+            HomeButton("Flashcard", onClick = onFlashcardClick) // THÊM DÒNG NÀY
             Spacer(modifier = Modifier.height(16.dp))
             HomeButton("History", onClick = onHistoryClick)
         }

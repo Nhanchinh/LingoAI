@@ -83,6 +83,8 @@ class RecordingManager(private val context: Context) {
     }
 
     fun playAudioFromText(text: String) {
+        // OLD CODE (bị comment):
+        /*
         if (text.isBlank()) {
             Log.e("RecordingManager", "Empty text for TTS")
             return
@@ -123,5 +125,19 @@ class RecordingManager(private val context: Context) {
                 Log.e("RecordingManager", "TTS API error: $error")
             }
         }
+        */
+        
+        // ✅ NEW CODE: Dùng AudioManager
+        AudioManager.playAudioFromText(context, text)
+    }
+    
+    // ✅ THÊM MỚI: Function để stop audio hiện tại
+    fun stopCurrentAudio() {
+        AudioManager.stopCurrentAudio()
+    }
+    
+    // ✅ THÊM MỚI: Check audio playing
+    fun isAudioPlaying(): Boolean {
+        return AudioManager.isPlaying()
     }
 }

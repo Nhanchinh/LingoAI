@@ -48,13 +48,13 @@ fun ProfileScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp)
+               // .padding(16.dp)
         ) {
             // Header với nút Back
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 40.dp),
+                    .padding(top = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
@@ -69,7 +69,7 @@ fun ProfileScreen(
                     "Thông tin cá nhân",
                     fontWeight = FontWeight.Bold,
                     fontSize = 28.sp,
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.padding(start = 4.dp)
                 )
             }
 

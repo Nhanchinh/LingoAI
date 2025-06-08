@@ -66,7 +66,7 @@ dependencies {
 
     implementation ("org.jsoup:jsoup:1.14.3")
 
-
+    implementation("androidx.compose.material:material-icons-extended")
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 

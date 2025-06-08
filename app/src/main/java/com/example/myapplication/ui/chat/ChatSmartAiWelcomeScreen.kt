@@ -329,7 +329,7 @@ fun ChatSmartAiWelcomeScreen(
 
             // Sheep logo với animation scale
             Image(
-                painter = painterResource(id = R.drawable.sheep_logo),
+                painter = painterResource(id = R.drawable.sheep_chat),
                 contentDescription = null,
                 modifier = Modifier
                     .size(180.dp)

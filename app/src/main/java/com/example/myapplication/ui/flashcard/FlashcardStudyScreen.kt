@@ -381,15 +381,15 @@ fun FlashcardView(
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                        IconButton(
-                            onClick = { onPlayAudio(flashcard.front) }
-                        ) {
-                            Icon(
-                                Icons.Default.CheckCircle,
-                                contentDescription = "Phát âm",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
+//                        IconButton(
+//                            onClick = { onPlayAudio(flashcard.front) }
+//                        ) {
+//                            Icon(
+//                                Icons.Default.PlayArrow,
+//                                contentDescription = "Phát âm",
+//                                tint = MaterialTheme.colorScheme.primary
+//                            )
+//                        }
                     }
                 }
 

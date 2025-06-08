@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,11 +26,18 @@ import com.example.myapplication.ui.common.BottomNavBar
 import org.json.JSONObject
 import java.io.File
 
-// Thêm imports cho scroll
+// Thêm imports cho scroll và animation
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.myapplication.ui.theme.ButtonPrimary
 import com.example.myapplication.ui.theme.MainColor
+import com.example.myapplication.ui.theme.ButtonSecondary
+import com.example.myapplication.ui.theme.TextPrimary
+
+// THÊM: Imports cho animation
+import androidx.compose.animation.core.*
+import androidx.compose.ui.draw.rotate
+import kotlinx.coroutines.launch
 
 fun Context.bitmapToFile(bitmap: Bitmap): File {
     val file = File(cacheDir, "temp_image.jpg")
@@ -52,15 +60,28 @@ fun VisionaryResultScreen(
     var error by remember { mutableStateOf<String?>(null) }
     var imageUrl by remember { mutableStateOf<String?>(null) }
     var objects by remember { mutableStateOf<List<DetectedObject>>(emptyList()) }
+    
+    // THÊM: State tracking loading audio cho từng từ
+    var loadingAudioWords by remember { mutableStateOf<Set<String>>(emptySet()) }
 
-    // Khi image thay đổi, gọi API
+    // THÊM: Animation cho loading icon
+    val infiniteTransition = rememberInfiniteTransition(label = "audio_loading_animation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "rotation"
+    )
+
+    // Khi image thay đổi, gọi API với logic chống lặp
     LaunchedEffect(image) {
         if (image != null) {
             loading = true
             error = null
 
-            // Chuyển Bitmap thành File
-            val imageFile = context.bitmapToFile(image) // chuyển Bitmap thành File
+            val imageFile = context.bitmapToFile(image)
 
             ApiService.detectObject(imageFile) { responseJson ->
                 loading = false
@@ -73,17 +94,28 @@ fun VisionaryResultScreen(
                     val json = JSONObject(responseJson)
                     imageUrl = json.optString("image_url")
                     val jsonObjects = json.getJSONArray("objects")
+                    
+                    // LOGIC CHỐNG LẶP
+                    val addedWords = mutableSetOf<String>()
                     val tempList = mutableListOf<DetectedObject>()
+                    
                     for (i in 0 until jsonObjects.length()) {
                         val item = jsonObjects.getJSONObject(i)
-                        tempList.add(
-                            DetectedObject(
-                                ipa = item.optString("ipa"),
-                                meaning = item.optString("meaning"),
-                                word = item.optString("word")
+                        val word = item.optString("word").lowercase().trim()
+                        
+                        // CHỈ THÊM NẾU TỪ CHƯA TỒN TẠI
+                        if (word.isNotEmpty() && !addedWords.contains(word)) {
+                            tempList.add(
+                                DetectedObject(
+                                    ipa = item.optString("ipa"),
+                                    meaning = item.optString("meaning"),
+                                    word = item.optString("word")
+                                )
                             )
-                        )
+                            addedWords.add(word)
+                        }
                     }
+                    
                     objects = tempList
                     error = null
                 } catch (e: Exception) {
@@ -98,7 +130,6 @@ fun VisionaryResultScreen(
             .fillMaxSize()
             .background(MainColor)
     ) {
-        // Thêm verticalScroll để có thể cuộn
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -110,9 +141,11 @@ fun VisionaryResultScreen(
                 "Photo Result",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
+                color = TextPrimary,
                 modifier = Modifier.padding(vertical = 16.dp)
             )
 
+            // Ảnh được chụp
             Box(
                 modifier = Modifier
                     .fillMaxWidth(0.9f)
@@ -122,12 +155,11 @@ fun VisionaryResultScreen(
                 contentAlignment = Alignment.Center
             ) {
                 if (loading) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = ButtonPrimary)
                 } else if (error != null) {
                     Text(error ?: "", color = Color.Red)
                 } else {
                     if (imageUrl != null) {
-                        // Load ảnh từ url bằng Coil
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = "Detected image",
@@ -140,56 +172,9 @@ fun VisionaryResultScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            objects.forEach { obj ->
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth(0.9f)
-                        .padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Detected Word", fontWeight = FontWeight.Bold)
-                        Text(obj.word, fontSize = 20.sp, modifier = Modifier.padding(vertical = 8.dp))
-                        Text("Pronunciation: /${obj.ipa}/")
-                        Text(obj.meaning)
-
-                        // Thêm các nút play và save
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            horizontalArrangement = Arrangement.End,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            IconButton(
-                                onClick = { onPlayAudio(obj.word) }
-                            ) {
-                                Icon(
-                                    Icons.Default.PlayArrow,
-                                    contentDescription = "Play audio",
-                                    tint = ButtonPrimary
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            IconButton(
-                                onClick = { onSaveWord(obj.word) }
-                            ) {
-                                Icon(
-                                    Icons.Default.Add,
-                                    contentDescription = "Save word",
-                                    tint = ButtonPrimary
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
+            // Nút "Take another photo" 
+            Spacer(modifier = Modifier.height(16.dp))
+            
             Button(
                 onClick = onRetake,
                 colors = ButtonDefaults.buttonColors(containerColor = ButtonPrimary),
@@ -204,15 +189,91 @@ fun VisionaryResultScreen(
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Take another photo", fontSize = 18.sp)
+                Text("Take another photo", fontSize = 18.sp, color = Color.White)
             }
-        }
 
-//        BottomNavBar(
-//            currentRoute = "visionary_words",
-//            onNavItemSelected = onNavItemSelected,
-//            modifier = Modifier.align(Alignment.BottomCenter)
-//        )
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // THAY ĐỔI THIẾT KẾ CÁC THẺ TỪ VỰNG với loading animation
+            objects.forEach { obj ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .background(ButtonSecondary, shape = RoundedCornerShape(20.dp))
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            "${obj.word} /${obj.ipa}/",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextPrimary
+                        )
+                        Text(
+                            obj.meaning,
+                            fontSize = 16.sp,
+                            color = TextPrimary
+                        )
+                    }
+
+                    // Các nút Play và Save với loading animation
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { 
+                                if (!loadingAudioWords.contains(obj.word)) {
+                                    // Bắt đầu loading
+                                    loadingAudioWords = loadingAudioWords + obj.word
+                                    
+                                    // Gọi audio API
+                                    onPlayAudio(obj.word)
+                                    
+                                    // Simulate audio duration (có thể thay bằng callback thật từ audio manager)
+                                    kotlinx.coroutines.GlobalScope.launch {
+                                        kotlinx.coroutines.delay(3000) // 3 giây
+                                        loadingAudioWords = loadingAudioWords - obj.word
+                                    }
+                                }
+                            }
+                        ) {
+                            if (loadingAudioWords.contains(obj.word)) {
+                                // HIỂN THỊ LOADING ANIMATION
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = "Loading audio",
+                                    tint = ButtonPrimary,
+                                    modifier = Modifier.rotate(rotation)
+                                )
+                            } else {
+                                // HIỂN THỊ NÚT PLAY BÌNH THƯỜNG
+                                Icon(
+                                    Icons.Default.PlayArrow,
+                                    contentDescription = "Play audio",
+                                    tint = ButtonPrimary
+                                )
+                            }
+                        }
+                        
+                        IconButton(
+                            onClick = { onSaveWord(obj.word) }
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Save word",
+                                tint = ButtonPrimary
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 

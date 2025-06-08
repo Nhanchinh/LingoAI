@@ -35,6 +35,10 @@ import com.example.myapplication.ui.theme.TextPrimary
 import com.example.myapplication.ui.theme.WordItemBackground
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
+import com.example.myapplication.R
 
 data class WordDetail(
     val word: String,
@@ -80,9 +84,7 @@ fun WordDetailScreen(
     }
 
     if (wordDetail == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
+        LoadingScreenWithAppDesign(word = word, onBack = onBack)
     } else {
         WordDetailContent(
             wordDetail = wordDetail!!,
@@ -375,4 +377,214 @@ fun parseWordDetailFromJson(
         phrases = parseList("phrases"),
         onBackPressed = onBackPressed
     )
+}
+
+@Composable
+fun LoadingScreenWithAppDesign(
+    word: String,
+    onBack: () -> Unit
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "loading_animation")
+    
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "rotation"
+    )
+
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "scale"
+    )
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MainColor)
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 16.dp, start = 8.dp)
+        ) {
+            Icon(
+                Icons.Default.ArrowBack, 
+                contentDescription = "Back",
+                tint = TextPrimary,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(120.dp)
+                        .rotate(rotation),
+                    color = ButtonPrimary,
+                    strokeWidth = 3.dp
+                )
+                
+                Image(
+                    painter = painterResource(id = R.drawable.sheep_genie),
+                    contentDescription = "Loading",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .graphicsLayer(
+                            scaleX = scale,
+                            scaleY = scale
+                        )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Đang tìm kiếm từ",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "\"$word\"",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Medium,
+                color = ButtonPrimary
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            LoadingDots()
+        }
+    }
+}
+
+@Composable
+fun LoadingDots() {
+    val infiniteTransition = rememberInfiniteTransition(label = "dots_animation")
+    
+    val dots = listOf(
+        remember { Animatable(0f) },
+        remember { Animatable(0f) },
+        remember { Animatable(0f) }
+    )
+
+    dots.forEachIndexed { index, animatable ->
+        LaunchedEffect(key1 = animatable) {
+            delay(index * 200L)
+            animatable.animateTo(
+                targetValue = 1f,
+                animationSpec = infiniteRepeatable(
+                    animation = keyframes {
+                        durationMillis = 1200
+                        0.0f at 0 with LinearOutSlowInEasing
+                        1.0f at 300 with LinearOutSlowInEasing
+                        0.0f at 600 with LinearOutSlowInEasing
+                        0.0f at 1200 with LinearOutSlowInEasing
+                    },
+                    repeatMode = RepeatMode.Restart
+                )
+            )
+        }
+    }
+
+    Row(
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        dots.forEachIndexed { index, animatable ->
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .padding(horizontal = 2.dp)
+                    .background(
+                        color = ButtonPrimary.copy(alpha = animatable.value),
+                        shape = RoundedCornerShape(50)
+                    )
+            )
+        }
+    }
+}
+
+@Composable
+fun SimpleLoadingScreenWithAppDesign(
+    word: String,
+    onBack: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MainColor)
+    ) {
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 16.dp, start = 8.dp)
+        ) {
+            Icon(
+                Icons.Default.ArrowBack, 
+                contentDescription = "Back",
+                tint = TextPrimary,
+                modifier = Modifier.size(32.dp)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.sheep_genie),
+                contentDescription = "Loading",
+                modifier = Modifier.size(100.dp)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            CircularProgressIndicator(
+                modifier = Modifier.size(48.dp),
+                color = ButtonPrimary,
+                strokeWidth = 4.dp
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Đang tìm kiếm từ \"$word\"",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Medium,
+                color = TextPrimary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Vui lòng đợi...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextPrimary.copy(alpha = 0.7f)
+            )
+        }
+    }
 }

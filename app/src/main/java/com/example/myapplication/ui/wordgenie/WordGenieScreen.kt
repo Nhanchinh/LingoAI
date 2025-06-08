@@ -39,10 +39,19 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.gestures.detectTapGestures
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.ui.theme.TextFieldBackground
 import com.example.myapplication.ui.theme.ButtonPrimary
 import com.example.myapplication.ui.theme.AppText
+
+// Thêm imports cho focus
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 
 // WordDictionary object (giữ nguyên)
 object WordDictionary {
@@ -102,10 +111,12 @@ fun WordGenieScreen(
 ) {
     var searchWord by remember { mutableStateOf("") }
     val context = LocalContext.current
+    val focusManager = LocalFocusManager.current
 
     var suggestion by remember { mutableStateOf("") }
     var suggestions by remember { mutableStateOf<List<String>>(emptyList()) }
     var showDropdown by remember { mutableStateOf(false) }
+    var isFocused by remember { mutableStateOf(false) } // THÊM: Focus state
 
     // ✅ THÊM: Animated spacing
     val spacingHeight by animateDpAsState(
@@ -121,8 +132,9 @@ fun WordGenieScreen(
         WordDictionary.loadWords(context)
     }
 
-    LaunchedEffect(searchWord) {
-        if (searchWord.isNotBlank()) {
+    // CẬP NHẬT: Logic suggestion với focus state
+    LaunchedEffect(searchWord, isFocused) {
+        if (searchWord.isNotBlank() && isFocused) { // CHỈ HIỆN SUGGESTION KHI FOCUSED
             suggestion = WordDictionary.getSuggestion(searchWord)
             suggestions = WordDictionary.getSuggestions(searchWord, 5)
             showDropdown = suggestions.isNotEmpty()
@@ -137,6 +149,13 @@ fun WordGenieScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MainColor)
+            // THÊM: Click ra ngoài để tắt keyboard và suggestion
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {
+                    focusManager.clearFocus()
+                    showDropdown = false
+                })
+            }
     ) {
         IconButton(
             onClick = onBack,
@@ -154,7 +173,7 @@ fun WordGenieScreen(
                 .align(Alignment.Center)
                 .padding(horizontal = 24.dp)
                 .verticalScroll(rememberScrollState())
-                .animateContentSize( // ✅ THÊM: Smooth content size animation
+                .animateContentSize(
                     animationSpec = tween(
                         durationMillis = 300,
                         easing = FastOutSlowInEasing
@@ -163,7 +182,7 @@ fun WordGenieScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Image(
-                painter = painterResource(id = R.drawable.sheep_logo),
+                painter = painterResource(id = R.drawable.sheep_genie),
                 contentDescription = "Word Genie",
                 modifier = Modifier.size(140.dp)
             )
@@ -180,7 +199,7 @@ fun WordGenieScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // TextField với dropdown
+            // TextField với dropdown và focus handling
             AutoSuggestTextFieldWithDropdown(
                 value = searchWord,
                 onValueChange = { searchWord = it },
@@ -190,12 +209,21 @@ fun WordGenieScreen(
                 onSuggestionClick = { selectedWord ->
                     searchWord = selectedWord
                     showDropdown = false
+                    focusManager.clearFocus() // Tắt focus sau khi chọn suggestion
                 },
-                onDismissDropdown = { showDropdown = false },
+                onDismissDropdown = { 
+                    showDropdown = false
+                    focusManager.clearFocus()
+                },
+                onFocusChanged = { focused -> // THÊM: Callback cho focus change
+                    isFocused = focused
+                    if (!focused) {
+                        showDropdown = false
+                    }
+                },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // ✅ FIX: Animated spacing thay vì fixed
             Spacer(modifier = Modifier.height(spacingHeight))
 
             Button(
@@ -203,6 +231,7 @@ fun WordGenieScreen(
                     if (searchWord.isBlank()) {
                         Toast.makeText(context, "Bạn phải nhập từ", Toast.LENGTH_SHORT).show()
                     } else {
+                        focusManager.clearFocus() // Tắt focus khi nhấn nút
                         onSearchComplete(searchWord)
                     }
                 },
@@ -222,7 +251,7 @@ fun WordGenieScreen(
     }
 }
 
-// ✅ AutoSuggestTextField (giữ nguyên)
+// CẬP NHẬT: AutoSuggestTextField với focus handling
 @Composable
 fun AutoSuggestTextFieldWithDropdown(
     value: String,
@@ -232,8 +261,11 @@ fun AutoSuggestTextFieldWithDropdown(
     showDropdown: Boolean,
     onSuggestionClick: (String) -> Unit,
     onDismissDropdown: () -> Unit,
+    onFocusChanged: (Boolean) -> Unit, // THÊM: Focus callback
     modifier: Modifier = Modifier
 ) {
+    val focusRequester = remember { FocusRequester() }
+
     Box(modifier = modifier) {
         // TextField container
         Box(
@@ -243,7 +275,7 @@ fun AutoSuggestTextFieldWithDropdown(
                 .padding(16.dp)
         ) {
             // Background suggestion text
-            if (suggestion.isNotEmpty()) {
+            if (suggestion.isNotEmpty() && showDropdown) { // CHỈ HIỆN KHI DROPDOWN ĐANG MỞ
                 Text(
                     text = suggestion,
                     color = Color.Gray.copy(alpha = 0.4f),
@@ -254,14 +286,19 @@ fun AutoSuggestTextFieldWithDropdown(
                 )
             }
 
-            // Main input field
+            // Main input field với focus handling
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(
                     color = Color.Black
                 ),
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { focusState -> // THÊM: Focus change listener
+                        onFocusChanged(focusState.isFocused)
+                    },
                 decorationBox = { innerTextField ->
                     if (value.isEmpty()) {
                         Text(
@@ -275,7 +312,7 @@ fun AutoSuggestTextFieldWithDropdown(
             )
         }
 
-        // Dropdown với smooth animation
+        // Dropdown với smooth animation - CHỈ HIỆN KHI CÓ FOCUS
         AnimatedVisibility(
             visible = showDropdown && suggestions.isNotEmpty(),
             enter = expandVertically(

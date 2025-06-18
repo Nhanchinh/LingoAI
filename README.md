@@ -135,6 +135,9 @@ App sẽ **tự động cấu hình** API endpoints:
 # Install to device
 ./gradlew installDebug
 ```
+### 6. chạy server 
+vào link `https://colab.research.google.com/drive/1jWw4_jh-BLSytfnp54L1BFSYd43ijOw_#scrollTo=ZQTDr5ZoUTR5`
+click runtime  chọn run all sau đó đợi server chạy (khoảng 30p ^^')
 
 ### 6. Tạo Tài Khoản
 - Khởi chạy app

@@ -18,12 +18,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
 import com.example.myapplication.ui.theme.ButtonSecondary
 import com.example.myapplication.ui.theme.MainColor
 
@@ -36,6 +39,38 @@ fun FlashcardStudyScreen(
 ) {
     val context = LocalContext.current
     val viewModel: FlashcardViewModel = remember { FlashcardViewModel(context) }
+    
+    // Responsive configuration
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val screenHeight = configuration.screenHeightDp.dp
+    val isSmallScreen = screenWidth < 360.dp
+    val isVerySmallScreen = screenWidth < 320.dp
+    
+    // Responsive values
+    val horizontalPadding = when {
+        isVerySmallScreen -> 8.dp
+        isSmallScreen -> 12.dp
+        else -> 16.dp
+    }
+    
+    val cardHorizontalPadding = when {
+        isVerySmallScreen -> 8.dp
+        isSmallScreen -> 12.dp
+        else -> 16.dp
+    }
+    
+    val cardAspectRatio = when {
+        screenHeight < 600.dp -> 1.6f  // Landscape hoặc màn hình thấp
+        isSmallScreen -> 1.3f
+        else -> 1.4f
+    }
+    
+    val buttonTextSize = when {
+        isVerySmallScreen -> 12.sp
+        isSmallScreen -> 13.sp
+        else -> 14.sp
+    }
 
     val currentSet by viewModel.currentSet.collectAsState()
 
@@ -59,20 +94,23 @@ fun FlashcardStudyScreen(
         if (flashcards.isEmpty()) {
             // Empty state
             Box(
-                modifier = Modifier.fillMaxSize()
-
-                ,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MainColor),
                 contentAlignment = Alignment.Center
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Default.CheckCircle,
                         contentDescription = null,
-                        modifier = Modifier.size(64.dp),
+                        modifier = Modifier.size(if (isSmallScreen) 48.dp else 64.dp),
                         tint = MaterialTheme.colorScheme.outline
                     )
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Không có thẻ nào để học")
+                    Text(
+                        "Không có thẻ nào để học",
+                        fontSize = if (isSmallScreen) 16.sp else 18.sp
+                    )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = onBack) {
                         Text("Quay lại")
@@ -98,11 +136,15 @@ fun FlashcardStudyScreen(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // HEADER giống các trang khác
+                // RESPONSIVE HEADER
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 16.dp),
+                        .padding(
+                            top = if (isSmallScreen) 12.dp else 16.dp,
+                            start = horizontalPadding,
+                            end = horizontalPadding
+                        ),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -110,13 +152,13 @@ fun FlashcardStudyScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(if (isSmallScreen) 28.dp else 32.dp)
                         )
                     }
 
                     Text(
                         text = "${currentIndex + 1}/${flashcards.size}",
-                        fontSize = 18.sp,
+                        fontSize = if (isSmallScreen) 16.sp else 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
@@ -125,104 +167,250 @@ fun FlashcardStudyScreen(
                         Icon(
                             Icons.Default.Settings,
                             contentDescription = "Cài đặt",
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(if (isSmallScreen) 28.dp else 32.dp)
                         )
                     }
                 }
 
-                // Progress bar
+                // Responsive Progress bar
                 LinearProgressIndicator(
                     progress = (currentIndex + 1).toFloat() / flashcards.size,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(8.dp),
+                        .padding(horizontal = horizontalPadding)
+                        .height(if (isSmallScreen) 6.dp else 8.dp),
                     color = Color(0xFFE48ED4),
                     trackColor = Color.White.copy(alpha = 0.5f)
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 32.dp))
 
-                // Flashcard view
+                // Responsive Flashcard view
                 if (currentIndex < flashcards.size) {
-                    FlashcardView(
+                    ResponsiveFlashcardView(
                         flashcard = flashcards[currentIndex],
                         isFlipped = isFlipped,
                         studyMode = studyMode,
                         flipAnimation = flipAnimation,
                         onFlip = { isFlipped = !isFlipped },
                         onPlayAudio = onPlayAudio,
+                        cardAspectRatio = cardAspectRatio,
+                        cardHorizontalPadding = cardHorizontalPadding,
+                        isSmallScreen = isSmallScreen,
                         modifier = Modifier.weight(1f)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 32.dp))
 
-                // Control buttons theo style của dự án
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Button(
-                        onClick = {
-                            if (currentIndex > 0) {
-                                currentIndex--
-                                isFlipped = false
-                            }
-                        },
-                        enabled = currentIndex > 0,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFD9D9D9)
-                        ),
-                        shape = RoundedCornerShape(20.dp)
+                // RESPONSIVE Control buttons
+                if (isVerySmallScreen) {
+                    // Layout dọc cho màn hình rất nhỏ
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = horizontalPadding),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null)
-                       // Spacer(modifier = Modifier.width(4.dp))
-                        Text("Trước", color = Color.Black)
-                    }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = {
+                                    if (currentIndex > 0) {
+                                        currentIndex--
+                                        isFlipped = false
+                                    }
+                                },
+                                enabled = currentIndex > 0,
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFD9D9D9)
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.ArrowBack, 
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "Trước", 
+                                    color = Color.Black,
+                                    fontSize = buttonTextSize,
+                                    maxLines = 1
+                                )
+                            }
 
-                    Spacer(modifier = Modifier.width(4.dp)) // Điều chỉnh giá trị này theo ý muốn
-                    Button(
-                        onClick = { isFlipped = !isFlipped },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE48ED4)
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Icon(Icons.Default.Info, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Lật thẻ")
-                    }
-                    Spacer(modifier = Modifier.width(4.dp)) // Điều chỉnh giá trị này theo ý muốn
-                    Button(
-                        onClick = {
-                            if (currentIndex < flashcards.size - 1) {
-                                currentIndex++
-                                isFlipped = false
-                            } else {
-                                showCompleteDialog = true
+                            Button(
+                                onClick = {
+                                    if (currentIndex < flashcards.size - 1) {
+                                        currentIndex++
+                                        isFlipped = false
+                                    } else {
+                                        showCompleteDialog = true
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFE48ED4)
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                contentPadding = PaddingValues(vertical = 8.dp, horizontal = 4.dp)
+                            ) {
+                                Text(
+                                    "Tiếp",
+                                    fontSize = buttonTextSize,
+                                    maxLines = 1
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Icon(
+                                    Icons.Default.ArrowForward, 
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFE48ED4)
-                        ),
-                        shape = RoundedCornerShape(20.dp)
+                        }
+                        
+                        Button(
+                            onClick = { isFlipped = !isFlipped },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE48ED4)
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Info, 
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Lật thẻ",
+                                fontSize = buttonTextSize
+                            )
+                        }
+                    }
+                } else {
+                    // Layout ngang cho màn hình bình thường
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = if (isSmallScreen) 16.dp else 32.dp),
+                        horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 6.dp else 8.dp)
                     ) {
-                        Text("Tiếp")
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(Icons.Default.ArrowForward, contentDescription = null)
+                        Button(
+                            onClick = {
+                                if (currentIndex > 0) {
+                                    currentIndex--
+                                    isFlipped = false
+                                }
+                            },
+                            enabled = currentIndex > 0,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFD9D9D9)
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(
+                                vertical = if (isSmallScreen) 8.dp else 12.dp,
+                                horizontal = if (isSmallScreen) 4.dp else 8.dp
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.ArrowBack, 
+                                contentDescription = null,
+                                modifier = Modifier.size(if (isSmallScreen) 16.dp else 20.dp)
+                            )
+                            if (!isSmallScreen) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    "Trước", 
+                                    color = Color.Black,
+                                    fontSize = buttonTextSize,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Button(
+                            onClick = { isFlipped = !isFlipped },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE48ED4)
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(
+                                vertical = if (isSmallScreen) 8.dp else 12.dp,
+                                horizontal = if (isSmallScreen) 4.dp else 8.dp
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Info, 
+                                contentDescription = null,
+                                modifier = Modifier.size(if (isSmallScreen) 16.dp else 20.dp)
+                            )
+                            if (!isSmallScreen) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Text(
+                                "Lật thẻ",
+                                fontSize = buttonTextSize,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                if (currentIndex < flashcards.size - 1) {
+                                    currentIndex++
+                                    isFlipped = false
+                                } else {
+                                    showCompleteDialog = true
+                                }
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFFE48ED4)
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(
+                                vertical = if (isSmallScreen) 8.dp else 12.dp,
+                                horizontal = if (isSmallScreen) 4.dp else 8.dp
+                            )
+                        ) {
+                            Text(
+                                "Tiếp",
+                                fontSize = buttonTextSize,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            if (!isSmallScreen) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Icon(
+                                Icons.Default.ArrowForward, 
+                                contentDescription = null,
+                                modifier = Modifier.size(if (isSmallScreen) 16.dp else 20.dp)
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Action buttons khi đã lật thẻ
+                // Responsive Action buttons khi đã lật thẻ
                 if (isFlipped) {
+                    Spacer(modifier = Modifier.height(8.dp))
                     Row(
-                        modifier = Modifier.padding(horizontal = 32.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = if (isSmallScreen) 16.dp else 32.dp),
+                        horizontalArrangement = Arrangement.spacedBy(if (isSmallScreen) 8.dp else 12.dp)
                     ) {
                         Button(
                             onClick = {
@@ -238,11 +426,26 @@ fun FlashcardStudyScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFF4CAF50)
                             ),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(
+                                vertical = if (isSmallScreen) 8.dp else 12.dp,
+                                horizontal = if (isSmallScreen) 4.dp else 8.dp
+                            )
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Biết rồi")
+                            Icon(
+                                Icons.Default.CheckCircle, 
+                                contentDescription = null,
+                                modifier = Modifier.size(if (isSmallScreen) 16.dp else 20.dp)
+                            )
+                            if (!isSmallScreen) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                            }
+                            Text(
+                                "Biết rồi",
+                                fontSize = buttonTextSize,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
 
                         Button(
@@ -259,16 +462,31 @@ fun FlashcardStudyScreen(
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Color(0xFFFF5722)
                             ),
-                            shape = RoundedCornerShape(20.dp)
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(
+                                vertical = if (isSmallScreen) 8.dp else 12.dp,
+                                horizontal = if (isSmallScreen) 4.dp else 8.dp
+                            )
                         ) {
-                            Icon(Icons.Default.Close, contentDescription = null)
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Chưa biết")
+                            Icon(
+                                Icons.Default.Close, 
+                                contentDescription = null,
+                                modifier = Modifier.size(if (isSmallScreen) 16.dp else 20.dp)
+                            )
+                            if (!isSmallScreen) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                            }
+                            Text(
+                                "Chưa biết",
+                                fontSize = buttonTextSize,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(if (isSmallScreen) 16.dp else 32.dp))
             }
         }
     }
@@ -300,13 +518,16 @@ fun FlashcardStudyScreen(
 }
 
 @Composable
-fun FlashcardView(
+fun ResponsiveFlashcardView(
     flashcard: Flashcard,
     isFlipped: Boolean,
     studyMode: StudyMode,
     flipAnimation: Animatable<Float, AnimationVector1D>,
     onFlip: () -> Unit,
     onPlayAudio: (String) -> Unit,
+    cardAspectRatio: Float,
+    cardHorizontalPadding: Dp,
+    isSmallScreen: Boolean,
     modifier: Modifier = Modifier
 ) {
     // Animation logic
@@ -317,7 +538,6 @@ fun FlashcardView(
         )
     }
 
-    // SỬA LOGIC NÀY: Đơn giản hóa điều kiện hiển thị
     val showFront = !isFlipped
     val cardAlpha = if (abs(flipAnimation.value % 360 - 90f) < 45f || abs(flipAnimation.value % 360 - 270f) < 45f) {
         0.1f
@@ -325,11 +545,27 @@ fun FlashcardView(
         1f
     }
 
+    // Responsive text sizes
+    val headlineSize = when {
+        isSmallScreen -> MaterialTheme.typography.headlineSmall.fontSize
+        else -> MaterialTheme.typography.headlineMedium.fontSize
+    }
+    
+    val titleSize = when {
+        isSmallScreen -> MaterialTheme.typography.titleSmall.fontSize
+        else -> MaterialTheme.typography.titleMedium.fontSize
+    }
+    
+    val bodySize = when {
+        isSmallScreen -> MaterialTheme.typography.bodySmall.fontSize
+        else -> MaterialTheme.typography.bodyMedium.fontSize
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .aspectRatio(1.4f)
+            .padding(horizontal = cardHorizontalPadding)
+            .aspectRatio(cardAspectRatio)
             .graphicsLayer {
                 rotationY = flipAnimation.value
                 alpha = cardAlpha
@@ -348,95 +584,88 @@ fun FlashcardView(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(if (isSmallScreen) 16.dp else 24.dp),
             contentAlignment = Alignment.Center
         ) {
-            // SỬA: Đơn giản hóa logic hiển thị front/back
             if (showFront) {
-                // FRONT SIDE - Hiển thị mặt trước
+                // FRONT SIDE
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
                     val frontText = when (studyMode) {
-                        StudyMode.FRONT_TO_BACK -> flashcard.front  // Từ tiếng Anh
-                        StudyMode.BACK_TO_FRONT -> flashcard.back   // Nghĩa tiếng Việt
+                        StudyMode.FRONT_TO_BACK -> flashcard.front
+                        StudyMode.BACK_TO_FRONT -> flashcard.back
                         StudyMode.MIXED -> flashcard.front
                     }
 
                     Text(
                         text = frontText,
-                        style = MaterialTheme.typography.headlineMedium,
+                        fontSize = headlineSize,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = if (isSmallScreen) 3 else 4,
+                        overflow = TextOverflow.Ellipsis
                     )
 
-                    // Chỉ hiển thị IPA và nút phát âm khi ở chế độ FRONT_TO_BACK (từ EN -> VN)
                     if (studyMode == StudyMode.FRONT_TO_BACK && flashcard.ipa.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 8.dp else 16.dp))
                         Text(
                             text = "/${flashcard.ipa}/",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            fontSize = titleSize,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
-//                        IconButton(
-//                            onClick = { onPlayAudio(flashcard.front) }
-//                        ) {
-//                            Icon(
-//                                Icons.Default.PlayArrow,
-//                                contentDescription = "Phát âm",
-//                                tint = MaterialTheme.colorScheme.primary
-//                            )
-//                        }
                     }
                 }
 
-                // Tap hint
                 Text(
                     text = "Chạm để lật thẻ",
-                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = bodySize,
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
             } else {
-                // BACK SIDE - Hiển thị mặt sau
+                // BACK SIDE
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                     modifier = Modifier.graphicsLayer {
-                        rotationY = 180f  // Lật ngược để text đọc được
+                        rotationY = 180f
                     }
                 ) {
                     val backText = when (studyMode) {
-                        StudyMode.FRONT_TO_BACK -> flashcard.back   // Nghĩa tiếng Việt
-                        StudyMode.BACK_TO_FRONT -> flashcard.front  // Từ tiếng Anh
+                        StudyMode.FRONT_TO_BACK -> flashcard.back
+                        StudyMode.BACK_TO_FRONT -> flashcard.front
                         StudyMode.MIXED -> flashcard.back
                     }
 
                     Text(
                         text = backText,
-                        style = MaterialTheme.typography.headlineSmall,
+                        fontSize = if (isSmallScreen) MaterialTheme.typography.titleLarge.fontSize else MaterialTheme.typography.headlineSmall.fontSize,
                         textAlign = TextAlign.Center,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = if (isSmallScreen) 4 else 5,
+                        overflow = TextOverflow.Ellipsis
                     )
 
-                    // Hiển thị IPA khi ở chế độ BACK_TO_FRONT và đang hiển thị từ tiếng Anh
                     if (studyMode == StudyMode.BACK_TO_FRONT && flashcard.ipa.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(if (isSmallScreen) 8.dp else 16.dp))
                         Text(
                             text = "/${flashcard.ipa}/",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary
+                            fontSize = titleSize,
+                            color = MaterialTheme.colorScheme.primary,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-                // Tap hint cho mặt sau
                 Text(
                     text = "Chạm để lật lại",
-                    style = MaterialTheme.typography.bodySmall,
+                    fontSize = bodySize,
                     color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)

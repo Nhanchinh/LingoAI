@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import com.example.myapplication.R
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import com.example.myapplication.api.ApiService
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.ui.theme.Pink80
@@ -143,12 +144,16 @@ fun LoginScreen(
                     .fillMaxWidth()
                     .height(75.dp)
                     .padding(vertical = 12.dp),
+                shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Pink80,
                     contentColor = AppText
                 )
             ) {
-                Text("Đăng nhập")
+                Text(
+                    text = "Đăng nhập",
+                    fontSize = 22.sp
+                )
             }
 
             Text(

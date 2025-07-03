@@ -208,10 +208,16 @@ fun VisionaryResultScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            "${obj.word} /${obj.ipa}/",
+                            "${obj.word} ",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Medium,
                             color = TextPrimary
+                        )
+                        Text(
+                            "/${obj.ipa}/",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Gray
                         )
                         Text(
                             obj.meaning,

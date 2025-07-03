@@ -23,6 +23,10 @@ import androidx.compose.animation.core.*
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
+import com.example.myapplication.R
 import com.example.myapplication.api.ApiService
 import org.json.JSONObject
 import com.example.myapplication.ui.chat.AudioManager
@@ -38,7 +42,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.Image
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import com.example.myapplication.R
+import androidx.compose.ui.unit.Dp
 
 data class WordDetail(
     val word: String,
@@ -112,6 +116,16 @@ fun WordDetailContent(
     val tabData = listOf(wordDetail.synonyms, wordDetail.antonyms, wordDetail.phrases)
     val scrollState = rememberScrollState()
     val context = LocalContext.current
+    
+    // Get screen configuration for responsive design
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val isSmallScreen = screenWidth < 360.dp
+    
+    // Responsive sizing
+    val horizontalPadding = if (isSmallScreen) 12.dp else 16.dp
+    val tabHorizontalPadding = if (isSmallScreen) 2.dp else 4.dp
+    val tabFontSize = if (isSmallScreen) 12.sp else 14.sp
 
     var isMainWordLoading by remember { mutableStateOf(false) }
 
@@ -133,7 +147,7 @@ fun WordDetailContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp)
+                .padding(horizontal = horizontalPadding)
                 .verticalScroll(scrollState),
             verticalArrangement = Arrangement.Center
         ) {
@@ -150,10 +164,8 @@ fun WordDetailContent(
                         modifier = Modifier.size(40.dp)
                     )
                 }
-                Spacer(modifier = Modifier.weight(1f))
-                IconButton(onClick = { /* TODO: Bookmark */ }) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Bookmark")
-                }
+                //Spacer(modifier = Modifier.weight(1f))
+
             }
 
             // Word, phonetic/IPA, meaning, audio/save
@@ -220,10 +232,10 @@ fun WordDetailContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Tabs
+            // Responsive Tabs
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.spacedBy(tabHorizontalPadding)
             ) {
                 tabTitles.forEachIndexed { index, title ->
                     Button(
@@ -234,25 +246,47 @@ fun WordDetailContent(
                         ),
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = 4.dp)
+                            .height(if (isSmallScreen) 40.dp else 48.dp),
+                        contentPadding = PaddingValues(
+                            horizontal = if (isSmallScreen) 4.dp else 8.dp,
+                            vertical = if (isSmallScreen) 4.dp else 8.dp
+                        )
                     ) {
-                        Text(title)
+                        Text(
+                            text = title,
+                            fontSize = tabFontSize,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                        )
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Danh sách từ
+            // Tab content title
             Text(
                 text = tabTitles[selectedTab],
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontSize = if (isSmallScreen) 20.sp else 24.sp
+                ),
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             Spacer(modifier = Modifier.height(8.dp))
+            
+            // Word items list
             Column {
                 tabData[selectedTab].forEach { item ->
-                    WordItemRowWithSimpleAnimation(item, screenId, onPlayAudio, onSave)
+                    WordItemRowWithResponsiveDesign(
+                        item = item, 
+                        screenId = screenId, 
+                        onPlayAudio = onPlayAudio, 
+                        onSave = onSave,
+                        isSmallScreen = isSmallScreen
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
@@ -263,11 +297,12 @@ fun WordDetailContent(
 }
 
 @Composable
-fun WordItemRowWithSimpleAnimation(
+fun WordItemRowWithResponsiveDesign(
     item: WordItem,
     screenId: String,
     onPlayAudio: (String) -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String) -> Unit,
+    isSmallScreen: Boolean = false
 ) {
     val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
@@ -282,6 +317,13 @@ fun WordItemRowWithSimpleAnimation(
         ), label = "item_rotation"
     )
 
+    // Responsive sizing
+    val itemPadding = if (isSmallScreen) 8.dp else 12.dp
+    val wordFontSize = if (isSmallScreen) 14.sp else 16.sp
+    val phoneticFontSize = if (isSmallScreen) 12.sp else 14.sp
+    val meaningFontSize = if (isSmallScreen) 13.sp else 15.sp
+    val iconSize = if (isSmallScreen) 20.dp else 24.dp
+
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = ButtonSecondary,
@@ -289,55 +331,94 @@ fun WordItemRowWithSimpleAnimation(
     ) {
         Row(
             modifier = Modifier
-                .padding(12.dp)
+                .padding(itemPadding)
                 .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "${item.word} ${if (item.ipa.isNotEmpty()) "/${item.ipa}/" else item.phonetic}",
-                    fontWeight = FontWeight.Bold
+                    text = item.word,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = wordFontSize,
+                    color = Color.Black,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Text(item.meaning)
+                
+                val phoneticText = if (item.ipa.isNotEmpty()) "/${item.ipa}/" else item.phonetic
+                if (phoneticText.isNotEmpty()) {
+                    Text(
+                        text = phoneticText,
+                        fontWeight = FontWeight.Normal,
+                        fontSize = phoneticFontSize,
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                
+                Text(
+                    text = item.meaning,
+                    fontSize = meaningFontSize,
+                    color = Color.Black,
+                    maxLines = if (isSmallScreen) 2 else 3,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
-            IconButton(
-                onClick = {
-                    if (!isLoading) {
-                        AudioManager.stopCurrentAudio()
-                        isLoading = true
+            Row {
+                IconButton(
+                    onClick = {
+                        if (!isLoading) {
+                            AudioManager.stopCurrentAudio()
+                            isLoading = true
 
-                        AudioManager.playAudioFromText(
-                            context = context,
-                            text = item.word,
-                            screenId = screenId,
-                            onStateChange = { isPlaying ->
-                                if (isPlaying) {
-                                    kotlinx.coroutines.GlobalScope.launch {
-                                        delay(2500)
+                            AudioManager.playAudioFromText(
+                                context = context,
+                                text = item.word,
+                                screenId = screenId,
+                                onStateChange = { isPlaying ->
+                                    if (isPlaying) {
+                                        kotlinx.coroutines.GlobalScope.launch {
+                                            delay(2500)
+                                            isLoading = false
+                                        }
+                                    } else {
                                         isLoading = false
                                     }
-                                } else {
-                                    isLoading = false
                                 }
-                            }
+                            )
+                        }
+                    },
+                    modifier = Modifier.size(if (isSmallScreen) 36.dp else 48.dp)
+                ) {
+                    if (isLoading) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Loading audio",
+                            modifier = Modifier
+                                .size(iconSize)
+                                .rotate(rotation)
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.PlayArrow, 
+                            contentDescription = "Play audio",
+                            modifier = Modifier.size(iconSize)
                         )
                     }
                 }
-            ) {
-                if (isLoading) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "Loading audio",
-                        modifier = Modifier.rotate(rotation)
-                    )
-                } else {
-                    Icon(Icons.Default.PlayArrow, contentDescription = "Play audio")
-                }
-            }
 
-            IconButton(onClick = { onSave(item.word) }) {
-                Icon(Icons.Default.AddCircle, contentDescription = "Save")
+                IconButton(
+                    onClick = { onSave(item.word) },
+                    modifier = Modifier.size(if (isSmallScreen) 36.dp else 48.dp)
+                ) {
+                    Icon(
+                        Icons.Default.AddCircle, 
+                        contentDescription = "Save",
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
             }
         }
     }

@@ -460,143 +460,149 @@ fun ChatSmartAiChatScreen(
     onRecordStop: (((String) -> Unit) -> Unit) = {},
     onPlayAudio: (String) -> Unit = {}
 ) {
+    // Tạo screenId cho audio management
+    val screenId = remember { "chat_smart_ai_${System.currentTimeMillis()}" }
 
-    AudioScreenWrapper(screenName = "ChatSmartAI") {
-
-
-        val coroutineScope = rememberCoroutineScope()
-        var messages by remember {
-            mutableStateOf(listOf(ChatMessage("User", sentence, true)))
+    // ✅ BỎ AudioScreenWrapper, tự quản lý DisposableEffect
+    DisposableEffect(screenId) {
+        onDispose {
+            AudioManager.onScreenExit(screenId)
         }
+    }
 
-        // Thêm state để theo dõi trạng thái đang chờ phản hồi
-        var isWaitingForResponse by remember { mutableStateOf(false) }
-        var isRecording by remember { mutableStateOf(false) }
-        var isProcessingAudio by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    var messages by remember {
+        mutableStateOf(listOf(ChatMessage("User", sentence, true)))
+    }
 
-        // ✅ THÊM STATE ĐỂ THEO DÕI MESSAGE ĐÃ ĐƯỢC XỬ LÝ
-        var lastProcessedMessageIndex by remember { mutableStateOf(-1) }
+    // Thêm state để theo dõi trạng thái đang chờ phản hồi
+    var isWaitingForResponse by remember { mutableStateOf(false) }
+    var isRecording by remember { mutableStateOf(false) }
+    var isProcessingAudio by remember { mutableStateOf(false) }
 
-        // Thêm scrollState cho LazyColumn
-        val scrollState = rememberLazyListState()
+    // ✅ THÊM STATE ĐỂ THEO DÕI MESSAGE ĐÃ ĐƯỢC XỬ LÝ
+    var lastProcessedMessageIndex by remember { mutableStateOf(-1) }
 
-        // Animation cho mic xoay
-        val infiniteTransition = rememberInfiniteTransition(label = "mic_rotation")
-        val rotation by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 360f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(2000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            ),
-            label = "rotation"
-        )
+    // Thêm scrollState cho LazyColumn
+    val scrollState = rememberLazyListState()
 
-        // Animation cho processing
-        val pulseAnimation by infiniteTransition.animateFloat(
-            initialValue = 0.8f,
-            targetValue = 1.2f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(1000, easing = FastOutSlowInEasing),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "pulse"
-        )
+    // Animation cho mic xoay
+    val infiniteTransition = rememberInfiniteTransition(label = "mic_rotation")
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "rotation"
+    )
 
-        // Tự động cuộn xuống khi có tin nhắn mới
-        LaunchedEffect(messages.size) {
-            if (messages.isNotEmpty()) {
-                scrollState.animateScrollToItem(messages.size - 1)
-            }
+    // Animation cho processing
+    val pulseAnimation by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
+    )
+
+    // Tự động cuộn xuống khi có tin nhắn mới
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            scrollState.animateScrollToItem(messages.size - 1)
         }
+    }
 
-        // ✅ SỬA LOGIC HOÀN TOÀN: Sử dụng index để track message đã xử lý
-        LaunchedEffect(messages.size) {
-            val lastMessage = messages.lastOrNull()
-            val currentIndex = messages.size - 1
+    // ✅ SỬA LOGIC HOÀN TOÀN: Sử dụng index để track message đã xử lý
+    LaunchedEffect(messages.size) {
+        val lastMessage = messages.lastOrNull()
+        val currentIndex = messages.size - 1
 
-            // Chỉ gọi API nếu:
-            // 1. Message cuối là user message
-            // 2. Chưa xử lý message này (index > lastProcessedMessageIndex)
-            if (lastMessage?.isUser == true && currentIndex > lastProcessedMessageIndex) {
-                Log.d(
-                    "ChatSmartAI",
-                    "Processing message at index $currentIndex: ${lastMessage.text}"
-                )
+        // Chỉ gọi API nếu:
+        // 1. Message cuối là user message
+        // 2. Chưa xử lý message này (index > lastProcessedMessageIndex)
+        if (lastMessage?.isUser == true && currentIndex > lastProcessedMessageIndex) {
+            Log.d(
+                "ChatSmartAI",
+                "Processing message at index $currentIndex: ${lastMessage.text}"
+            )
 
-                // Đánh dấu đang xử lý message này
-                lastProcessedMessageIndex = currentIndex
+            // Đánh dấu đang xử lý message này
+            lastProcessedMessageIndex = currentIndex
 
-                // Hiển thị animation chờ
-                isWaitingForResponse = true
+            // Hiển thị animation chờ
+            isWaitingForResponse = true
 
-                ApiService.generateText(lastMessage.text) { code, response ->
-                    // Khi có phản hồi, ẩn animation chờ
-                    isWaitingForResponse = false
+            ApiService.generateText(lastMessage.text) { code, response ->
+                // Khi có phản hồi, ẩn animation chờ
+                isWaitingForResponse = false
 
-                    if (code == 200 && response != null) {
-                        try {
-                            val json = JSONObject(response)
-                            val textResponse = json.optString("response", "")
-                            if (textResponse.isNotEmpty()) {
-                                val aiMessage = ChatMessage("Lingoo", textResponse, false)
-                                coroutineScope.launch {
-                                    messages = messages + aiMessage
-                                    Log.d("ChatSmartAI", "Added AI response: $textResponse")
-                                }
+                if (code == 200 && response != null) {
+                    try {
+                        val json = JSONObject(response)
+                        val textResponse = json.optString("response", "")
+                        if (textResponse.isNotEmpty()) {
+                            val aiMessage = ChatMessage("Lingoo", textResponse, false)
+                            coroutineScope.launch {
+                                messages = messages + aiMessage
+                                Log.d("ChatSmartAI", "Added AI response: $textResponse")
                             }
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                            Log.e("ChatSmartAI", "Error parsing response: ${e.message}")
                         }
-                    } else {
-                        Log.e("ChatSmartAI", "API call failed with code: $code")
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Log.e("ChatSmartAI", "Error parsing response: ${e.message}")
                     }
+                } else {
+                    Log.e("ChatSmartAI", "API call failed with code: $code")
                 }
             }
         }
+    }
 
-        Box(
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MainColor)
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MainColor)
+                .padding(horizontal = 16.dp)
         ) {
-            Column(
+            // Header
+            Row(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp)
+                    .fillMaxWidth()
+                    .padding(top = 40.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Header
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 40.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = {
-                            // ✅ CHỈ CẦN THÊM 1 DÒNG
-                            // AudioManager.onScreenExit()
-                            onBack()
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.ArrowBack, contentDescription = "Back",
-                            modifier = Modifier.size(32.dp)
-                        )
+                IconButton(
+                    onClick = {
+                        // ✅ THÊM manual cleanup
+                        AudioManager.onScreenExit(screenId)
+                        onBack()
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "ChatSmart AI",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 28.sp,
-                        fontFamily = FontFamily.Serif
+                ) {
+                    Icon(
+                        Icons.Default.ArrowBack, contentDescription = "Back",
+                        modifier = Modifier.size(32.dp)
                     )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "ChatSmart AI",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 28.sp,
+                    fontFamily = FontFamily.Serif
+                )
+            }
 
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Debug info - có thể bỏ sau khi test xong
+            // Debug info - có thể bỏ sau khi test xong
 //            Text(
 //                "Messages: ${messages.size}, LastProcessed: $lastProcessedMessageIndex",
 //                fontSize = 12.sp,
@@ -604,121 +610,122 @@ fun ChatSmartAiChatScreen(
 //                modifier = Modifier.padding(4.dp)
 //            )
 
-                // Thay thế Column bằng LazyColumn
-                LazyColumn(
-                    state = scrollState,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(messages) { msg ->
-                        ChatBubbleWithAnimation(msg, onPlayAudio)
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    // Hiển thị loading animation khi đang chờ phản hồi
-                    if (isWaitingForResponse) {
-                        item {
-                            TypingIndicator()
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                    }
+            // Thay thế Column bằng LazyColumn
+            LazyColumn(
+                state = scrollState,
+                modifier = Modifier.weight(1f)
+            ) {
+                items(messages) { msg ->
+                    ChatBubbleWithAnimation(
+                        message = msg, 
+                        screenId = screenId,  // ← Truyền screenId
+                        onPlayAudio = onPlayAudio
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Icon mic ở dưới
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 38.dp),
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    if (!isWaitingForResponse) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .background(
-                                    color = when {
-                                        isRecording -> ButtonPrimary
-                                        isProcessingAudio -> ButtonPrimary
-                                        else -> ButtonSecondary
-                                    },
-                                    shape = RoundedCornerShape(28.dp)
-                                )
-                                .pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onPress = {
-                                            isRecording = true
-                                            onRecordStart()
-                                            tryAwaitRelease()
-                                            isRecording = false
-                                            isProcessingAudio = true // Bắt đầu xử lý audio
-                                            onRecordStop { transcription ->
-                                                Log.d("Transcription", "Received: $transcription")
-                                                coroutineScope.launch {
-                                                    if (transcription.isNotBlank()) {
-                                                        messages = messages + ChatMessage(
-                                                            "User",
-                                                            transcription,
-                                                            true
-                                                        )
-                                                        Log.d(
-                                                            "ChatSmartAI",
-                                                            "Added user message: $transcription"
-                                                        )
-                                                    }
-                                                    isProcessingAudio =
-                                                        false // Kết thúc xử lý audio
+                // Hiển thị loading animation khi đang chờ phản hồi
+                if (isWaitingForResponse) {
+                    item {
+                        TypingIndicator()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
+            }
+
+            // Icon mic ở dưới
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 38.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
+                if (!isWaitingForResponse) {
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(
+                                color = when {
+                                    isRecording -> ButtonPrimary
+                                    isProcessingAudio -> ButtonPrimary
+                                    else -> ButtonSecondary
+                                },
+                                shape = RoundedCornerShape(28.dp)
+                            )
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onPress = {
+                                        isRecording = true
+                                        onRecordStart()
+                                        tryAwaitRelease()
+                                        isRecording = false
+                                        isProcessingAudio = true // Bắt đầu xử lý audio
+                                        onRecordStop { transcription ->
+                                            Log.d("Transcription", "Received: $transcription")
+                                            coroutineScope.launch {
+                                                if (transcription.isNotBlank()) {
+                                                    messages = messages + ChatMessage(
+                                                        "User",
+                                                        transcription,
+                                                        true
+                                                    )
+                                                    Log.d(
+                                                        "ChatSmartAI",
+                                                        "Added user message: $transcription"
+                                                    )
                                                 }
+                                                isProcessingAudio =
+                                                    false // Kết thúc xử lý audio
                                             }
                                         }
-                                    )
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            // CircularProgressIndicator cho trạng thái recording và processing
-                            if (isRecording || isProcessingAudio) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .graphicsLayer(
-                                            scaleX = if (isProcessingAudio) pulseAnimation else 1f,
-                                            scaleY = if (isProcessingAudio) pulseAnimation else 1f
-                                        ),
-                                    color = MaterialTheme.colorScheme.primary,
-                                    strokeWidth = 2.dp
+                                    }
                                 )
-                            }
-
-                            // Icon mic với animation
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_mic),
-                                contentDescription = "Mic",
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // CircularProgressIndicator cho trạng thái recording và processing
+                        if (isRecording || isProcessingAudio) {
+                            CircularProgressIndicator(
                                 modifier = Modifier
-                                    .size(32.dp)
+                                    .size(40.dp)
                                     .graphicsLayer(
-                                        rotationZ = if (isRecording) rotation else 0f,
                                         scaleX = if (isProcessingAudio) pulseAnimation else 1f,
                                         scaleY = if (isProcessingAudio) pulseAnimation else 1f
                                     ),
-                                tint = when {
-                                    isRecording -> Color.Red
-                                    isProcessingAudio -> Color.Green
-                                    else -> Color.Black
-                                }
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 2.dp
                             )
                         }
+
+                        // Icon mic với animation
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_mic),
+                            contentDescription = "Mic",
+                            modifier = Modifier
+                                .size(32.dp)
+                                .graphicsLayer(
+                                    rotationZ = if (isRecording) rotation else 0f,
+                                    scaleX = if (isProcessingAudio) pulseAnimation else 1f,
+                                    scaleY = if (isProcessingAudio) pulseAnimation else 1f
+                                ),
+                            tint = when {
+                                isRecording -> Color.Red
+                                isProcessingAudio -> Color.Green
+                                else -> Color.Black
+                            }
+                        )
                     }
                 }
             }
         }
-
-
     }
-
 }
 
 // ✅ CHAT BUBBLE VỚI ANIMATION GIỐNG VOCABINFO
 @Composable
 fun ChatBubbleWithAnimation(
     message: ChatMessage,
+    screenId: String,  // ← Thêm parameter này
     onPlayAudio: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -766,18 +773,18 @@ fun ChatBubbleWithAnimation(
                 IconButton(
                     onClick = {
                         if (!isLoading) {
-                            // ✅ DỪNG AUDIO CŨ TRƯỚC KHI PHÁT MỚI
                             AudioManager.stopCurrentAudio()
-
                             isLoading = true
 
+                            // ✅ ĐẢM BẢO DÙNG ĐÚNG screenId
                             AudioManager.playAudioFromText(
                                 context = context,
                                 text = message.text,
+                                screenId = screenId,  // ← Quan trọng!
                                 onStateChange = { isPlaying ->
                                     if (isPlaying) {
                                         kotlinx.coroutines.GlobalScope.launch {
-                                            delay(5500) // ~5 giây
+                                            delay(5500)
                                             isLoading = false
                                         }
                                     } else {
@@ -807,18 +814,18 @@ fun ChatBubbleWithAnimation(
                 IconButton(
                     onClick = {
                         if (!isLoading) {
-                            // ✅ DỪNG AUDIO CŨ TRƯỚC KHI PHÁT MỚI
                             AudioManager.stopCurrentAudio()
-
                             isLoading = true
 
+                            // ✅ ĐẢM BẢO DÙNG ĐÚNG screenId
                             AudioManager.playAudioFromText(
                                 context = context,
                                 text = message.text,
+                                screenId = screenId,  // ← Quan trọng!
                                 onStateChange = { isPlaying ->
                                     if (isPlaying) {
                                         kotlinx.coroutines.GlobalScope.launch {
-                                            delay(5500) // 2.5 giây
+                                            delay(5500)
                                             isLoading = false
                                         }
                                     } else {

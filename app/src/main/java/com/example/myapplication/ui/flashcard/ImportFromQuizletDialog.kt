@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import com.example.myapplication.ui.common.KeyboardDismissWrapper
 import com.example.myapplication.ui.theme.ButtonPrimary
 import com.example.myapplication.ui.theme.ButtonSecondary
 import com.example.myapplication.ui.theme.TextPrimary
@@ -59,6 +60,9 @@ fun ImportFromQuizletDialog(
             )
         },
         text = {
+            KeyboardDismissWrapper {
+
+
             Column(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -221,6 +225,7 @@ fun ImportFromQuizletDialog(
                     }
                 }
             }
+        }
         },
         confirmButton = {
             TextButton(

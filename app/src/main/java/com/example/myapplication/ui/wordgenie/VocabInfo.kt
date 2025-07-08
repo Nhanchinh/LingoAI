@@ -277,17 +277,33 @@ fun WordDetailContent(
             )
             Spacer(modifier = Modifier.height(8.dp))
             
-            // Word items list
+            // ✅ SỬA: Word items list với placeholder
             Column {
-                tabData[selectedTab].forEach { item ->
-                    WordItemRowWithResponsiveDesign(
-                        item = item, 
-                        screenId = screenId, 
-                        onPlayAudio = onPlayAudio, 
-                        onSave = onSave,
-                        isSmallScreen = isSmallScreen
+                if (tabData[selectedTab].isEmpty()) {
+                    // ✅ THÊM: Placeholder text khi không có dữ liệu
+                    val tabNames = listOf("từ đồng nghĩa", "từ trái nghĩa", "cụm từ")
+                    
+                    Text(
+                        text = "Hiện không thấy ${tabNames[selectedTab]} với \"${wordDetail.word}\"",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Gray.copy(alpha = 0.7f), // Text mờ
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                } else {
+                    // ✅ HIỂN THỊ danh sách như cũ khi có dữ liệu
+                    tabData[selectedTab].forEach { item ->
+                        WordItemRowWithResponsiveDesign(
+                            item = item, 
+                            screenId = screenId, 
+                            onPlayAudio = onPlayAudio, 
+                            onSave = onSave,
+                            isSmallScreen = isSmallScreen
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
 

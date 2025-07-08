@@ -22,12 +22,13 @@ class RecordingManager(private val context: Context) {
         }
 
         try {
-            val file = File(context.cacheDir, "recorded_audio.3gp")
+            val file = File(context.cacheDir, "recorded_audio.ogg")
             recorder = MediaRecorder().apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC)
-                setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
+                setOutputFormat(MediaRecorder.OutputFormat.OGG)
+                setAudioEncoder(MediaRecorder.AudioEncoder.OPUS)  // ✅ OPUS encoder
+                setAudioSamplingRate(16000)
                 setOutputFile(file.absolutePath)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
                 prepare()
                 start()
             }

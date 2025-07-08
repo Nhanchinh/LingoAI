@@ -20,9 +20,11 @@ import java.io.IOException
 import java.util.concurrent.TimeUnit
 
 object ApiService {
+    // Tạo OkHttpClient với timeout dài hơn (1 phút)
     private val client = OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(90, TimeUnit.SECONDS)
+        .writeTimeout(90, TimeUnit.SECONDS)
+        .readTimeout(90, TimeUnit.SECONDS)  // Tăng read timeout
         .build()
 
     // URL ban đầu - sẽ được cập nhật bởi fetchAndSetBaseUrl

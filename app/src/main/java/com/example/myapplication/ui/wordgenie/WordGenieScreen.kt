@@ -103,7 +103,7 @@ object WordDictionary {
     }
 }
 
-// ✅ FIX: WordGenieScreen với smooth animated spacing
+//  FIX: WordGenieScreen với smooth animated spacing
 @Composable
 fun WordGenieScreen(
     onBack: () -> Unit,
@@ -118,7 +118,7 @@ fun WordGenieScreen(
     var showDropdown by remember { mutableStateOf(false) }
     var isFocused by remember { mutableStateOf(false) } // THÊM: Focus state
 
-    // ✅ THÊM: Animated spacing
+    //  THÊM: Animated spacing
     val spacingHeight by animateDpAsState(
         targetValue = if (showDropdown && suggestions.isNotEmpty()) 100.dp else 16.dp,
         animationSpec = tween(

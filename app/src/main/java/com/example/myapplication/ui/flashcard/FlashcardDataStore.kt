@@ -8,10 +8,12 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.decodeFromString
+import com.example.myapplication.UserPreferences
 
 // Extension để tạo DataStore
 val Context.flashcardDataStore: DataStore<Preferences> by preferencesDataStore(name = "flashcard_preferences")
@@ -38,8 +40,12 @@ data class SerializableFlashcardSet(
 )
 
 class FlashcardDataStore(private val context: Context) {
-    companion object {
-        private val FLASHCARD_SETS_KEY = stringPreferencesKey("flashcard_sets")
+    private val userPreferences = UserPreferences(context)
+    
+    // Lấy key theo userId hiện tại
+    private suspend fun getFlashcardSetsKey(): String {
+        val userId = userPreferences.userId.first()
+        return if (userId != null) "flashcard_sets_$userId" else "flashcard_sets"
     }
 
     // Lưu flashcard sets
@@ -66,18 +72,24 @@ class FlashcardDataStore(private val context: Context) {
             }
             
             val jsonString = Json.encodeToString(serializableSets)
+            val key = stringPreferencesKey(getFlashcardSetsKey())
+            
             context.flashcardDataStore.edit { preferences ->
-                preferences[FLASHCARD_SETS_KEY] = jsonString
+                preferences[key] = jsonString
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    // Lấy flashcard sets
-    val flashcardSets: Flow<List<FlashcardSet>> = context.flashcardDataStore.data.map { preferences ->
+    // Lấy flashcard sets theo userId hiện tại
+    val flashcardSets: Flow<List<FlashcardSet>> = userPreferences.userId.map { userId ->
         try {
-            val jsonString = preferences[FLASHCARD_SETS_KEY] ?: return@map emptyList()
+            val keyName = if (userId != null) "flashcard_sets_$userId" else "flashcard_sets"
+            val key = stringPreferencesKey(keyName)
+            
+            val preferences = context.flashcardDataStore.data.first()
+            val jsonString = preferences[key] ?: return@map emptyList()
             val serializableSets = Json.decodeFromString<List<SerializableFlashcardSet>>(jsonString)
             
             serializableSets.map { set ->

@@ -42,7 +42,7 @@ LingoAI là một ứng dụng Android được thiết kế để giúp ngườ
 
 ### 5. 🃏 Flashcard
 - **Tạo bộ thẻ** từ vựng tùy chỉnh
-- **Import từ Quizlet**
+- **Import từ vựng**
 - **Chế độ học** với flip animation
 - **Quản lý bộ thẻ** hiệu quả
 

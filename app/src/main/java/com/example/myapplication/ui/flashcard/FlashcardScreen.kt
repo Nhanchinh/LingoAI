@@ -31,6 +31,7 @@ fun FlashcardScreen(
     onOpenSet: (String) -> Unit
 ) {
     val context = LocalContext.current
+    // Quay về cách khởi tạo ViewModel đơn giản ban đầu
     val viewModel: FlashcardViewModel = remember { FlashcardViewModel(context) }
     
     // Specify explicit types
@@ -154,10 +155,7 @@ fun FlashcardScreen(
                         Spacer(modifier = Modifier.height(10.dp)) // Điều chỉnh giá trị này theo ý muốn
                     }
                 }
-
-
             }
-
         }
     }
 
@@ -179,6 +177,7 @@ fun FlashcardScreen(
         }
     }
 }
+
 
 // CARD theo pattern History
 @Composable

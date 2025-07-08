@@ -7,14 +7,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.*
-// Thêm import này vào đầu file
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-
-
+import com.example.myapplication.UserPreferences
 
 class FlashcardRepository(context: Context) {
     private val dataStore = FlashcardDataStore(context)
+    private val userPreferences = UserPreferences(context)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     private val saveMutex = Mutex()
@@ -25,8 +24,24 @@ class FlashcardRepository(context: Context) {
     private val _currentSet = MutableStateFlow<FlashcardSet?>(null)
     val currentSet: StateFlow<FlashcardSet?> = _currentSet.asStateFlow()
 
+    private var currentUserId: String? = null
+
     init {
-        // Load dữ liệu từ DataStore khi khởi tạo
+        // Load dữ liệu từ DataStore khi khởi tạo và khi userId thay đổi
+        scope.launch {
+            userPreferences.userId.collect { userId ->
+                if (currentUserId != userId) {
+                    currentUserId = userId
+                    // Reset current set khi chuyển user
+                    _currentSet.value = null
+                    // Load dữ liệu của user mới
+                    loadFlashcardSets()
+                }
+            }
+        }
+    }
+
+    private fun loadFlashcardSets() {
         scope.launch {
             dataStore.flashcardSets.collect { sets ->
                 _flashcardSets.value = sets
@@ -55,11 +70,11 @@ class FlashcardRepository(context: Context) {
             description = description
         )
         _flashcardSets.value = _flashcardSets.value + newSet
-        saveData() // LƯU DỮ LIỆU
+        saveData()
         return newSet.id
     }
 
-    // Thêm flashcard vào bộ
+    // Thêm flashcard
     fun addFlashcard(setId: String, front: String, back: String, ipa: String = "") {
         val newFlashcard = Flashcard(
             id = UUID.randomUUID().toString(),
@@ -69,7 +84,6 @@ class FlashcardRepository(context: Context) {
             setId = setId
         )
         
-        // Cập nhật _flashcardSets
         val updatedSets = _flashcardSets.value.map { set ->
             if (set.id == setId) {
                 set.copy(flashcards = set.flashcards + newFlashcard)
@@ -79,12 +93,12 @@ class FlashcardRepository(context: Context) {
         }
         _flashcardSets.value = updatedSets
         
-        // Cập nhật currentSet nếu đang xem set này
+        // Cập nhật currentSet nếu cần
         if (_currentSet.value?.id == setId) {
             _currentSet.value = updatedSets.find { it.id == setId }
         }
         
-        saveData() // LƯU DỮ LIỆU
+        saveData()
     }
 
     // Xóa flashcard
@@ -98,63 +112,57 @@ class FlashcardRepository(context: Context) {
         }
         _flashcardSets.value = updatedSets
         
-        // Cập nhật currentSet nếu đang xem set này
+        // Cập nhật currentSet nếu cần
         if (_currentSet.value?.id == setId) {
             _currentSet.value = updatedSets.find { it.id == setId }
         }
         
-        saveData() // LƯU DỮ LIỆU
+        saveData()
     }
 
     // Xóa bộ flashcard
     fun deleteFlashcardSet(setId: String) {
         _flashcardSets.value = _flashcardSets.value.filter { it.id != setId }
-        // Xóa currentSet nếu đang xem set này
+        
+        // Nếu set hiện tại bị xóa, clear currentSet
         if (_currentSet.value?.id == setId) {
             _currentSet.value = null
         }
         
-        saveData() // LƯU DỮ LIỆU
-    }
-
-    // Lấy bộ flashcard theo ID
-    fun getFlashcardSet(setId: String): FlashcardSet? {
-        return _flashcardSets.value.find { it.id == setId }
+        saveData()
     }
 
     // Đặt bộ flashcard hiện tại
     fun setCurrentSet(setId: String) {
-        _currentSet.value = getFlashcardSet(setId)
+        _currentSet.value = _flashcardSets.value.find { it.id == setId }
     }
 
-    // Cập nhật trạng thái học của flashcard
+    // Cập nhật trạng thái học
     fun updateFlashcardLearnedStatus(setId: String, flashcardId: String, isLearned: Boolean) {
         val updatedSets = _flashcardSets.value.map { set ->
             if (set.id == setId) {
-                set.copy(
-                    flashcards = set.flashcards.map { flashcard ->
-                        if (flashcard.id == flashcardId) {
-                            flashcard.copy(isLearned = isLearned)
-                        } else {
-                            flashcard
-                        }
+                set.copy(flashcards = set.flashcards.map { flashcard ->
+                    if (flashcard.id == flashcardId) {
+                        flashcard.copy(isLearned = isLearned)
+                    } else {
+                        flashcard
                     }
-                )
+                })
             } else {
                 set
             }
         }
         _flashcardSets.value = updatedSets
         
-        // Cập nhật currentSet nếu đang xem set này
+        // Cập nhật currentSet nếu cần
         if (_currentSet.value?.id == setId) {
             _currentSet.value = updatedSets.find { it.id == setId }
         }
         
-        saveData() // LƯU DỮ LIỆU
+        saveData()
     }
 
-    // Thêm hàm này sau hàm addFlashcard hiện tại
+    // Thêm hàm batch import
     fun addFlashcardsBatch(setId: String, cards: List<Triple<String, String, String>>) {
         val newFlashcards = cards.map { (front, back, ipa) ->
             Flashcard(
@@ -166,7 +174,6 @@ class FlashcardRepository(context: Context) {
             )
         }
         
-        // Cập nhật state 1 lần duy nhất
         val updatedSets = _flashcardSets.value.map { set ->
             if (set.id == setId) {
                 set.copy(flashcards = set.flashcards + newFlashcards)
@@ -181,7 +188,6 @@ class FlashcardRepository(context: Context) {
             _currentSet.value = updatedSets.find { it.id == setId }
         }
         
-        // Chỉ lưu 1 lần
         saveData()
     }
 

@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,11 +22,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.myapplication.api.ApiService
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.UserPreferences
 import kotlinx.coroutines.launch
+import androidx.compose.ui.tooling.preview.Preview
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
@@ -59,7 +60,7 @@ fun ProfileScreen(
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        Icons.Default.ArrowBack,
+                        Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
                         modifier = Modifier.size(32.dp)
                     )
@@ -115,6 +116,59 @@ fun ProfileScreen(
                 )
             }
 
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // --- AI Settings ---
+            val voices = listOf(
+                "af_heart", "af_bella", "af_sarah", "af_sky",
+                "am_michael", "am_onyx", "am_fenrir"
+            )
+
+            val currentVoice = userPreferences.aiVoice.collectAsState(initial = "af_heart").value ?: "af_heart"
+
+            var expandedVoice by remember { mutableStateOf(false) }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+            ) {
+                Text("Cài đặt AI", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Voice selector
+                ExposedDropdownMenuBox(
+                    expanded = expandedVoice,
+                    onExpandedChange = { expandedVoice = !expandedVoice }
+                ) {
+                    OutlinedTextField(
+                        value = currentVoice,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Giọng AI") },
+                        modifier = Modifier
+                            .menuAnchor()
+                            .fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expandedVoice,
+                        onDismissRequest = { expandedVoice = false }
+                    ) {
+                        voices.forEach { v ->
+                            DropdownMenuItem(
+                                text = { Text(v) },
+                                onClick = {
+                                    expandedVoice = false
+                                    coroutineScope.launch { userPreferences.saveAiVoice(v) }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
             Spacer(modifier = Modifier.weight(1f))
 
             // Nút đăng xuất
@@ -153,4 +207,13 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ProfileScreenPreview() {
+    ProfileScreen(
+        onBack = {},
+        onLogout = {}
+    )
 }

@@ -19,6 +19,7 @@ class UserPreferences(private val context: Context) {
         private val USER_ID_KEY = stringPreferencesKey("user_id")
         private val USERNAME_KEY = stringPreferencesKey("username")
         private val AUTH_TOKEN_KEY = stringPreferencesKey("auth_token")
+        private val AI_VOICE_KEY = stringPreferencesKey("ai_voice")
     }
 
     // Lưu thông tin người dùng
@@ -57,6 +58,18 @@ class UserPreferences(private val context: Context) {
             preferences.remove(USER_ID_KEY)
             preferences.remove(USERNAME_KEY)
             preferences.remove(AUTH_TOKEN_KEY)
+            preferences.remove(AI_VOICE_KEY)
+        }
+    }
+
+    // --- AI Preferences ---
+    val aiVoice: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[AI_VOICE_KEY]
+    }
+
+    suspend fun saveAiVoice(voice: String) {
+        context.dataStore.edit { preferences ->
+            preferences[AI_VOICE_KEY] = voice
         }
     }
 }

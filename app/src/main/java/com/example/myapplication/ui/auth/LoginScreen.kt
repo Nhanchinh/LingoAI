@@ -156,6 +156,29 @@ fun LoginScreen(
                 )
             }
 
+            // Offline guest login
+            OutlinedButton(
+                onClick = {
+                    val guestId = "guest_" + System.currentTimeMillis()
+                    // Lưu local user và điều hướng
+                    coroutineScope.launch {
+                        val userPreferences = UserPreferences(context)
+                        userPreferences.saveUserData(guestId, "Guest")
+                        ApiService.setUserId(guestId)
+                        Handler(Looper.getMainLooper()).post {
+                            Toast.makeText(context, "Đang dùng chế độ offline (Guest)", Toast.LENGTH_SHORT).show()
+                            onLoginSuccess()
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(text = "Dùng offline", fontSize = 18.sp)
+            }
+
             Text(
                 text = "Bạn chưa có tài khoản? Đăng ký",
                 modifier = Modifier

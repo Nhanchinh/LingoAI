@@ -6,6 +6,11 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import com.example.myapplication.api.ApiService
+import com.example.myapplication.UserPreferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
 
@@ -30,11 +35,38 @@ object AudioManager {
 
         onStateChange?.invoke(true)
 
-        ApiService.textToSpeech(text) { code, byteArray, error ->
+        // Read preferred voice from DataStore (default to af_heart)
+        val userPrefs = UserPreferences(context)
+        var preferredVoice = "af_heart"
+        try {
+            // Blocking fetch on IO thread
+            val scope = CoroutineScope(Dispatchers.IO)
+            scope.launch {
+                preferredVoice = userPrefs.aiVoice.first() ?: "af_heart"
+                ApiService.textToSpeech(text, voice = preferredVoice) { code, byteArray, error ->
+                    handleTtsResponse(context, text, screenId, code, byteArray, error, onStateChange)
+                }
+            }
+        } catch (e: Exception) {
+            ApiService.textToSpeech(text, voice = preferredVoice) { code, byteArray, error ->
+                handleTtsResponse(context, text, screenId, code, byteArray, error, onStateChange)
+            }
+        }
+    }
+
+    private fun handleTtsResponse(
+        context: Context,
+        text: String,
+        screenId: String,
+        code: Int,
+        byteArray: ByteArray?,
+        error: String?,
+        onStateChange: ((Boolean) -> Unit)?
+    ) {
             if (currentScreenId != screenId) {
                 Log.d("AudioManager", "Screen changed - audio cancelled")
                 onStateChange?.invoke(false)
-                return@textToSpeech
+            return
             }
 
             if (code == 200 && byteArray != null) {
@@ -89,7 +121,6 @@ object AudioManager {
                 Log.e("AudioManager", "TTS API error: $error")
                 onStateChange?.invoke(false)
             }
-        }
     }
 
     fun stopCurrentAudio() {

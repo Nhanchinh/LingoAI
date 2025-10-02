@@ -87,7 +87,7 @@ fun FlashcardScreen(
             )
             
             Text(
-                text = "Flashcards",
+                text = "Learning",
                 fontSize = 36.sp, // Size giống History
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,

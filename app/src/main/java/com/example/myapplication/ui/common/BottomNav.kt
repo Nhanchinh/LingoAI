@@ -37,7 +37,7 @@ fun BottomNavBar(currentRoute: String, onNavItemSelected: (String) -> Unit, modi
         NavItem("Chat", "chat_smart_ai", Icons.Filled.Chat, Icons.Outlined.Chat),
         NavItem("Vision", "visionary_words", Icons.Filled.Visibility, Icons.Outlined.Visibility),
         NavItem("History", "history", Icons.Filled.Schedule, Icons.Outlined.Schedule),
-        NavItem("Cards", "flashcard", Icons.Filled.Style, Icons.Outlined.Style)
+        NavItem("Ôn tập", "flashcard", Icons.Filled.Style, Icons.Outlined.Style)
     )
 
     Column(

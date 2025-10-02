@@ -39,6 +39,8 @@ import com.example.myapplication.ui.chat.ChatSmartAiChatScreen
 import com.example.myapplication.ui.flashcard.FlashcardDetailScreen
 import com.example.myapplication.ui.flashcard.FlashcardScreen
 import com.example.myapplication.ui.flashcard.FlashcardStudyScreen
+import com.example.myapplication.ui.flashcard.MatchingStudyScreen
+import com.example.myapplication.ui.flashcard.MultipleChoiceStudyScreen
 
 object Routes {
     // Auth routes
@@ -66,6 +68,8 @@ object Routes {
 
     const val FLASHCARD_DETAIL = "flashcard_detail" // THÊM DÒNG NÀY
     const val FLASHCARD_STUDY = "flashcard_study"   // THÊM DÒNG NÀY
+    const val MATCHING_STUDY = "matching_study"
+    const val MULTIPLE_CHOICE_STUDY = "multiple_choice_study"
 
 
 }
@@ -453,6 +457,12 @@ fun AppNavGraph(
                     onBack = { navController.popBackStack() },
                     onStartStudy = { studySetId ->
                         navController.navigate("${Routes.FLASHCARD_STUDY}/$studySetId")
+                    },
+                    onStartMatching = { matchingSetId ->
+                        navController.navigate("${Routes.MATCHING_STUDY}/$matchingSetId")
+                    },
+                    onStartMultipleChoice = { mcSetId ->
+                        navController.navigate("${Routes.MULTIPLE_CHOICE_STUDY}/$mcSetId")
                     }
                 )
             }
@@ -480,6 +490,56 @@ fun AppNavGraph(
                     setId = setId,
                     onBack = { navController.popBackStack() },
                     onPlayAudio = { word -> recordingManager.playAudioFromText(word) }
+                )
+            }
+
+            composable(
+                route = "${Routes.MATCHING_STUDY}/{setId}",
+                arguments = listOf(
+                    navArgument("setId") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val setId = backStackEntry.arguments?.getString("setId") ?: ""
+                MatchingStudyScreen(
+                    setId = setId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = "${Routes.MULTIPLE_CHOICE_STUDY}/{setId}",
+                arguments = listOf(
+                    navArgument("setId") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val setId = backStackEntry.arguments?.getString("setId") ?: ""
+                MultipleChoiceStudyScreen(
+                    setId = setId,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

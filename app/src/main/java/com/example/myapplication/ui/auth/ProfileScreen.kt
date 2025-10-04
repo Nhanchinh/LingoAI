@@ -28,6 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.UserPreferences
+import com.example.myapplication.ui.streak.UltraSimpleStreak
+import com.example.myapplication.ui.streak.UltraSimpleStreakCard
+import com.example.myapplication.ui.streak.UltraSimpleStreakInfo
 import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -42,6 +45,17 @@ fun ProfileScreen(
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
     val coroutineScope = rememberCoroutineScope()
+
+    // Ultra Simple Streak setup
+    var streakInfo by remember { mutableStateOf(UltraSimpleStreakInfo()) }
+    
+    // Auto-refresh streak info every 5 seconds
+    LaunchedEffect(Unit) {
+        while (true) {
+            streakInfo = UltraSimpleStreak.getStreakInfo()
+            kotlinx.coroutines.delay(5000) // 5 seconds
+        }
+    }
 
     // Lấy thông tin người dùng từ DataStore
     val username = userPreferences.username.collectAsState(initial = "").value ?: "User"
@@ -213,6 +227,11 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
+
+            // Ultra Simple Streak Card
+            UltraSimpleStreakCard(
+                streakInfo = streakInfo
+            )
 
             Spacer(modifier = Modifier.weight(1f))
             

@@ -228,6 +228,7 @@ import com.example.myapplication.api.ApiService
 import com.example.myapplication.navigation.AppNavGraph
 import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.UserPreferences
+import com.example.myapplication.ui.streak.UltraSimpleStreak
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.*
@@ -259,6 +260,9 @@ class MainActivity : ComponentActivity() {
             if (isUserLoggedIn && userId != null) {
                 ApiService.setUserId(userId)
                 Log.d("MainActivity", "Set userId in ApiService: $userId")
+                
+                // Khởi tạo UltraSimpleStreak
+                UltraSimpleStreak.initialize(applicationContext)
                 
                 // Không tự động lên lịch thông báo nữa, để người dùng tự cài đặt
                 // scheduleDailyNotification(applicationContext)
@@ -362,5 +366,12 @@ class MainActivity : ComponentActivity() {
             Log.e("MainActivity", "Lỗi khi lên lịch thông báo", e)
             Toast.makeText(context, "Lỗi khi lên lịch thông báo: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        Log.d("MainActivity", "onResume called")
+        // Ghi nhận đã mở app
+        UltraSimpleStreak.recordAppOpen()
     }
 }

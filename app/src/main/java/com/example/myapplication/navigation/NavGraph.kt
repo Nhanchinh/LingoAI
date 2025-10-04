@@ -228,6 +228,9 @@ fun AppNavGraph(
                     },
                     onNotificationSettings = {
                         navController.navigate(Routes.NOTIFICATION_SETTINGS)
+                    },
+                    onAISettings = {
+                        navController.navigate(Routes.AI_SETTINGS)
                     }
                 )
             }
@@ -249,6 +252,27 @@ fun AppNavGraph(
                 }
             ) {
                 NotificationSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            // AI Settings Screen
+            composable(
+                route = Routes.AI_SETTINGS,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                AISettingsScreen(
                     onBack = { navController.popBackStack() }
                 )
             }

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,7 +36,8 @@ import androidx.compose.ui.tooling.preview.Preview
 fun ProfileScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
-    onNotificationSettings: () -> Unit = {}
+    onNotificationSettings: () -> Unit = {},
+    onAISettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
@@ -96,6 +98,25 @@ fun ProfileScreen(
                         expanded = showSettingsMenu,
                         onDismissRequest = { showSettingsMenu = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Psychology,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Cài đặt AI")
+                                }
+                            },
+                            onClick = {
+                                showSettingsMenu = false
+                                onAISettings()
+                            }
+                        )
                         DropdownMenuItem(
                             text = { 
                                 Row(
@@ -192,57 +213,6 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // --- AI Settings ---
-            val voices = listOf(
-                "af_heart", "af_bella", "af_sarah", "af_sky",
-                "am_michael", "am_onyx", "am_fenrir"
-            )
-
-            val currentVoice = userPreferences.aiVoice.collectAsState(initial = "af_heart").value ?: "af_heart"
-
-            var expandedVoice by remember { mutableStateOf(false) }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Text("Cài đặt AI", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Voice selector
-                ExposedDropdownMenuBox(
-                    expanded = expandedVoice,
-                    onExpandedChange = { expandedVoice = !expandedVoice }
-                ) {
-                    OutlinedTextField(
-                        value = currentVoice,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Giọng AI") },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedVoice,
-                        onDismissRequest = { expandedVoice = false }
-                    ) {
-                        voices.forEach { v ->
-                            DropdownMenuItem(
-                                text = { Text(v) },
-                                onClick = {
-                                    expandedVoice = false
-                                    coroutineScope.launch { userPreferences.saveAiVoice(v) }
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-            }
 
             Spacer(modifier = Modifier.weight(1f))
             

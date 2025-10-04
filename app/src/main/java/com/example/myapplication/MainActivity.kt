@@ -205,6 +205,10 @@
 package com.example.myapplication
 
 import android.Manifest
+import android.app.AlarmManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
@@ -226,13 +230,15 @@ import com.example.myapplication.ui.theme.MyApplicationTheme
 import com.example.myapplication.UserPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     private val PERMISSIONS_REQUEST_CODE = 123
     private val REQUIRED_PERMISSIONS = arrayOf(
         Manifest.permission.CAMERA,
         Manifest.permission.RECORD_AUDIO,
-        Manifest.permission.INTERNET
+        Manifest.permission.INTERNET,
+        Manifest.permission.POST_NOTIFICATIONS
     )
 
     // Biến để lưu trạng thái đăng nhập
@@ -253,6 +259,9 @@ class MainActivity : ComponentActivity() {
             if (isUserLoggedIn && userId != null) {
                 ApiService.setUserId(userId)
                 Log.d("MainActivity", "Set userId in ApiService: $userId")
+                
+                // Không tự động lên lịch thông báo nữa, để người dùng tự cài đặt
+                // scheduleDailyNotification(applicationContext)
             }
 
             // Kiểm tra quyền
@@ -307,6 +316,51 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             }
+        }
+    }
+    
+    /**
+     * Lên lịch thông báo hàng ngày lúc 8h sáng
+     */
+    private fun scheduleDailyNotification(context: Context) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val intent = Intent(context, NotificationReceiver::class.java)
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, 0, intent, PendingIntent.FLAG_IMMUTABLE
+            )
+
+            // Lấy thời gian 8:00 sáng
+            val calendar = Calendar.getInstance().apply {
+                timeInMillis = System.currentTimeMillis()
+                set(Calendar.HOUR_OF_DAY, 8)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+
+                // Nếu thời điểm hôm nay đã qua 8h, thì hẹn cho ngày mai
+                if (timeInMillis <= System.currentTimeMillis()) {
+                    add(Calendar.DAY_OF_MONTH, 1)
+                }
+            }
+
+            // Đặt báo thức lặp hằng ngày
+            alarmManager.setRepeating(
+                AlarmManager.RTC_WAKEUP,
+                calendar.timeInMillis,
+                AlarmManager.INTERVAL_DAY,
+                pendingIntent
+            )
+            
+            val nextNotificationTime = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+                .format(calendar.time)
+            
+            Log.d("MainActivity", "Đã lên lịch thông báo hàng ngày lúc 8h sáng. Lần tiếp theo: $nextNotificationTime")
+            Toast.makeText(context, "Đã lên lịch thông báo hàng ngày lúc 8h sáng", Toast.LENGTH_SHORT).show()
+            
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Lỗi khi lên lịch thông báo", e)
+            Toast.makeText(context, "Lỗi khi lên lịch thông báo: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 }

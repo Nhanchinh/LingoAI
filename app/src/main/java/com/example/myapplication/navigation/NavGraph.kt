@@ -41,6 +41,8 @@ import com.example.myapplication.ui.flashcard.FlashcardScreen
 import com.example.myapplication.ui.flashcard.FlashcardStudyScreen
 import com.example.myapplication.ui.flashcard.MatchingStudyScreen
 import com.example.myapplication.ui.flashcard.MultipleChoiceStudyScreen
+import com.example.myapplication.ui.notification.NotificationSettingsScreen
+import com.example.myapplication.ui.ai.AISettingsScreen
 
 object Routes {
     // Auth routes
@@ -51,6 +53,8 @@ object Routes {
     // Main features
     const val HOME = "home"
     const val PROFILE = "profile"  // Thêm route này
+    const val NOTIFICATION_SETTINGS = "notification_settings"
+    const val AI_SETTINGS = "ai_settings"
     // Feature routes
     const val WORD_GENIE = "word_genie"
     const val CHAT_SMART_AI = "chat_smart_ai"
@@ -221,11 +225,33 @@ fun AppNavGraph(
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(navController.graph.id) { inclusive = true }
                         }
+                    },
+                    onNotificationSettings = {
+                        navController.navigate(Routes.NOTIFICATION_SETTINGS)
                     }
                 )
             }
 
-
+            // Notification Settings Screen
+            composable(
+                route = Routes.NOTIFICATION_SETTINGS,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                NotificationSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
 
             composable(
                 route = Routes.WORD_GENIE,

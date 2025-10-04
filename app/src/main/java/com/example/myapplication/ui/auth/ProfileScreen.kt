@@ -12,6 +12,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,7 +34,8 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNotificationSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
@@ -51,7 +55,7 @@ fun ProfileScreen(
                 .fillMaxSize()
                // .padding(16.dp)
         ) {
-            // Header với nút Back
+            // Header với nút Back và Settings
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -70,8 +74,79 @@ fun ProfileScreen(
                     "Thông tin cá nhân",
                     fontWeight = FontWeight.Bold,
                     fontSize = 28.sp,
-                    modifier = Modifier.padding(start = 4.dp)
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+
+                // Settings dropdown menu
+                var showSettingsMenu by remember { mutableStateOf(false) }
+                
+                Box {
+                    IconButton(
+                        onClick = { showSettingsMenu = true }
+                    ) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    
+                    DropdownMenu(
+                        expanded = showSettingsMenu,
+                        onDismissRequest = { showSettingsMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Notifications,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Cài đặt thông báo")
+                                }
+                            },
+                            onClick = {
+                                showSettingsMenu = false
+                                onNotificationSettings()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.ExitToApp,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Đăng xuất")
+                                }
+                            },
+                            onClick = {
+                                showSettingsMenu = false
+                                coroutineScope.launch {
+                                    // Xóa dữ liệu người dùng
+                                    userPreferences.clearUserData()
+
+                                    // Thông báo đăng xuất thành công
+                                    Handler(Looper.getMainLooper()).post {
+                                        Toast.makeText(context, "Đăng xuất thành công", Toast.LENGTH_SHORT).show()
+                                    }
+
+                                    // Gọi callback đăng xuất
+                                    onLogout()
+                                }
+                            }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -170,40 +245,7 @@ fun ProfileScreen(
             }
 
             Spacer(modifier = Modifier.weight(1f))
-
-            // Nút đăng xuất
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        // Xóa dữ liệu người dùng
-                        userPreferences.clearUserData()
-
-                        // Thông báo đăng xuất thành công
-                        Handler(Looper.getMainLooper()).post {
-                            Toast.makeText(context, "Đăng xuất thành công", Toast.LENGTH_SHORT).show()
-                        }
-
-                        // Gọi callback đăng xuất
-                        onLogout()
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE57373),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 32.dp)
-            ) {
-                Text(
-                    "Đăng xuất",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
+            
             Spacer(modifier = Modifier.height(32.dp))
         }
     }

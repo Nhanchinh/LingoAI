@@ -41,6 +41,8 @@ import com.example.myapplication.ui.flashcard.FlashcardScreen
 import com.example.myapplication.ui.flashcard.FlashcardStudyScreen
 import com.example.myapplication.ui.flashcard.MatchingStudyScreen
 import com.example.myapplication.ui.flashcard.MultipleChoiceStudyScreen
+import com.example.myapplication.ui.flashcard.VideoStudyScreen
+import com.example.myapplication.ui.flashcard.VideoPlayerScreen
 import com.example.myapplication.ui.notification.NotificationSettingsScreen
 import com.example.myapplication.ui.ai.AISettingsScreen
 
@@ -72,6 +74,8 @@ object Routes {
 
     const val FLASHCARD_DETAIL = "flashcard_detail" // THÊM DÒNG NÀY
     const val FLASHCARD_STUDY = "flashcard_study"   // THÊM DÒNG NÀY
+    const val VIDEO_STUDY = "video_study"
+    const val VIDEO_PLAYER = "video_player"
     const val MATCHING_STUDY = "matching_study"
     const val MULTIPLE_CHOICE_STUDY = "multiple_choice_study"
 
@@ -479,7 +483,81 @@ fun AppNavGraph(
                     },
                     onOpenSet = { setId ->
                         navController.navigate("${Routes.FLASHCARD_DETAIL}/$setId")
+                    },
+                    onNavigateToVideoStudy = {
+                        navController.navigate(Routes.VIDEO_STUDY)
                     }
+                )
+            }
+
+            // Video Study Screen
+            composable(
+                route = Routes.VIDEO_STUDY,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                VideoStudyScreen(
+                    onBack = { navController.popBackStack() },
+                    onVideoClick = { videoId, title, description ->
+                        // Tìm subtitle file name dựa trên title
+                        val subtitleFile = when (title) {
+                            "Học từ vựng cơ bản" -> "subtitle_basic_vocab.json"
+                            "Phát âm chuẩn" -> "subtitle_pronunciation.json"
+                            "Từ vựng TOEIC" -> "subtitle_toeic.json"
+                            "Từ vựng IELTS" -> "subtitle_basic_vocab.json"
+                            "Từ vựng giao tiếp" -> "subtitle_pronunciation.json"
+                            else -> null
+                        }
+                        val subtitleParam = subtitleFile ?: "none"
+                        navController.navigate("${Routes.VIDEO_PLAYER}/$videoId/$title/$description/$subtitleParam")
+                    }
+                )
+            }
+
+            // Video Player Screen
+            composable(
+                route = "${Routes.VIDEO_PLAYER}/{videoId}/{title}/{description}/{subtitleFile}",
+                arguments = listOf(
+                    navArgument("videoId") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType },
+                    navArgument("description") { type = NavType.StringType },
+                    navArgument("subtitleFile") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+                val title = backStackEntry.arguments?.getString("title") ?: "Video"
+                val description = backStackEntry.arguments?.getString("description") ?: ""
+                val subtitleFile = backStackEntry.arguments?.getString("subtitleFile")
+                val subtitleFileName = if (subtitleFile == "none") null else subtitleFile
+                
+                VideoPlayerScreen(
+                    videoId = videoId,
+                    title = title,
+                    description = description,
+                    subtitleFileName = subtitleFileName,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

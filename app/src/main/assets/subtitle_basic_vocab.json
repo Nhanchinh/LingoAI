@@ -1,0 +1,17 @@
+[
+  { "start": 0.0, "end": 3.0, "text": "Hello everyone, welcome to our English lesson!" },
+  { "start": 3.1, "end": 6.5, "text": "Today we will learn basic English vocabulary." },
+  { "start": 6.6, "end": 10.0, "text": "Let's start with the word 'Hello'." },
+  { "start": 10.1, "end": 13.5, "text": "Hello means greeting someone politely." },
+  { "start": 13.6, "end": 17.0, "text": "Please repeat after me: Hello, Hello, Hello." },
+  { "start": 17.1, "end": 20.5, "text": "The next word is 'Thank you'." },
+  { "start": 20.6, "end": 24.0, "text": "Thank you is used to express gratitude." },
+  { "start": 24.1, "end": 27.5, "text": "Say 'Thank you' when someone helps you." },
+  { "start": 27.6, "end": 31.0, "text": "Another important word is 'Please'." },
+  { "start": 31.1, "end": 34.5, "text": "Please is used to make polite requests." },
+  { "start": 34.6, "end": 38.0, "text": "For example: Please help me, please sit down." },
+  { "start": 38.1, "end": 41.5, "text": "Now let's practice saying 'Sorry'." },
+  { "start": 41.6, "end": 45.0, "text": "Sorry is used to apologize for mistakes." },
+  { "start": 45.1, "end": 48.5, "text": "These are essential words for daily conversation." },
+  { "start": 48.6, "end": 52.0, "text": "Thank you for watching this English lesson!" }
+]

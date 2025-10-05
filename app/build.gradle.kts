@@ -67,6 +67,12 @@ dependencies {
     implementation ("org.jsoup:jsoup:1.14.3")
 
     implementation("androidx.compose.material:material-icons-extended")
+    
+    // YouTube Player
+    implementation("com.pierfrancescosoffritti.androidyoutubeplayer:core:12.1.0")
+    
+    // Gson for JSON parsing
+    implementation("com.google.code.gson:gson:2.10.1")
     // Kotlin Serialization
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
 

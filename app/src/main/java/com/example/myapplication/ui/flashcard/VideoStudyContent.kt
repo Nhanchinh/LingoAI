@@ -15,11 +15,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.ButtonPrimary
 import com.example.myapplication.ui.theme.TextPrimary
+import kotlinx.coroutines.launch
 
 // Demo video data class
 data class DemoVideo(
@@ -35,6 +37,25 @@ data class DemoVideo(
 fun VideoStudyContent(
     onVideoClick: (String, String, String) -> Unit = { _, _, _ -> }
 ) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    
+    var videos by remember { mutableStateOf<List<VideoWithSubtitle>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    
+    // Load videos từ JSON files
+    LaunchedEffect(Unit) {
+        scope.launch {
+            try {
+                videos = VideoDataManager.loadAllVideos(context)
+            } catch (e: Exception) {
+                // Fallback to hardcoded videos nếu có lỗi
+                videos = getDefaultVideos()
+            }
+            isLoading = false
+        }
+    }
+    
     LazyColumn(
         modifier = Modifier
             .fillMaxWidth()
@@ -81,63 +102,66 @@ fun VideoStudyContent(
             }
         }
 
-        // Demo video cards với YouTube video IDs và phụ đề
-        val demoVideos = listOf(
-            VideoWithSubtitle(
-                videoId = "wVhG59zh4uQ",
-                title = "Học từ vựng cơ bản",
-                description = "100 từ vựng thông dụng nhất",
-                duration = "15 phút",
-                level = "Beginner",
-                subtitleFileName = "subtitle_basic_vocab.json"
-            ),
-            VideoWithSubtitle(
-                videoId = "wVhG59zh4uQ",
-                title = "Phát âm chuẩn",
-                description = "Học cách phát âm 44 âm tiết",
-                duration = "20 phút",
-                level = "Intermediate",
-                subtitleFileName = "subtitle_pronunciation.json"
-            ),
-            VideoWithSubtitle(
-                videoId = "wVhG59zh4uQ",
-                title = "Từ vựng TOEIC",
-                description = "500 từ vựng TOEIC cần thiết",
-                duration = "45 phút",
-                level = "Advanced",
-                subtitleFileName = "subtitle_toeic.json"
-            ),
-            VideoWithSubtitle(
-                videoId = "wVhG59zh4uQ",
-                title = "Từ vựng IELTS",
-                description = "300 từ vựng IELTS Academic",
-                duration = "30 phút",
-                level = "Advanced",
-                subtitleFileName = "subtitle_basic_vocab.json"
-            ),
-            VideoWithSubtitle(
-                videoId = "wVhG59zh4uQ",
-                title = "Từ vựng giao tiếp",
-                description = "200 cụm từ giao tiếp hàng ngày",
-                duration = "25 phút",
-                level = "Intermediate",
-                subtitleFileName = "subtitle_pronunciation.json"
-            )
-        )
-
-        items(demoVideos) { video ->
-            DemoVideoCard(
-                video = video,
-                onClick = {
-                    onVideoClick(video.videoId, video.title, video.description)
+        // Loading state
+        if (isLoading) {
+            item {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = ButtonPrimary
+                    )
                 }
-            )
-        }
+            }
+        } else {
+            // Video cards từ JSON files
+            items(videos) { video ->
+                DemoVideoCard(
+                    video = video,
+                    onClick = {
+                        onVideoClick(video.videoId, video.title, video.description)
+                    }
+                )
+            }
 
-        item {
-            Spacer(modifier = Modifier.height(80.dp))
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
+            }
         }
     }
+}
+
+// Fallback videos nếu không đọc được từ JSON
+private fun getDefaultVideos(): List<VideoWithSubtitle> {
+    return listOf(
+        VideoWithSubtitle(
+            videoId = "dQw4w9WgXcQ",
+            title = "Học từ vựng cơ bản",
+            description = "100 từ vựng thông dụng nhất",
+            duration = "15 phút",
+            level = "Beginner",
+            subtitleFileName = "subtitle_basic_vocab.json"
+        ),
+        VideoWithSubtitle(
+            videoId = "jNQXAC9IVRw",
+            title = "Phát âm chuẩn",
+            description = "Học cách phát âm 44 âm tiết",
+            duration = "20 phút",
+            level = "Intermediate",
+            subtitleFileName = "subtitle_pronunciation.json"
+        ),
+        VideoWithSubtitle(
+            videoId = "M7lc1UVf-VE",
+            title = "Từ vựng TOEIC",
+            description = "500 từ vựng TOEIC cần thiết",
+            duration = "45 phút",
+            level = "Advanced",
+            subtitleFileName = "subtitle_toeic.json"
+        )
+    )
 }
 
 // Demo video card

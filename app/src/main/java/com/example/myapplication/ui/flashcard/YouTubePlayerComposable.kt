@@ -48,8 +48,15 @@ fun YouTubePlayerComposable(
             try {
                 val json = context.assets.open(fileName).bufferedReader().use { it.readText() }
                 val gson = Gson()
-                val type = object : TypeToken<List<Subtitle>>() {}.type
-                subtitles = gson.fromJson(json, type)
+                // Thử đọc với cấu trúc mới trước
+                try {
+                    val videoInfo = gson.fromJson(json, VideoInfo::class.java)
+                    subtitles = videoInfo.subtitles
+                } catch (e: Exception) {
+                    // Fallback về cấu trúc cũ nếu cần
+                    val type = object : TypeToken<List<Subtitle>>() {}.type
+                    subtitles = gson.fromJson(json, type)
+                }
             } catch (e: Exception) {
                 // Nếu không đọc được file phụ đề, tiếp tục mà không hiển thị phụ đề
                 subtitles = emptyList()

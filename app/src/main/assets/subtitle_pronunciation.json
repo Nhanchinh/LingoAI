@@ -1,17 +1,24 @@
-[
-  { "start": 0.0, "end": 3.5, "text": "Welcome to our English pronunciation lesson!" },
-  { "start": 3.6, "end": 7.0, "text": "Today we will practice English sounds and words." },
-  { "start": 7.1, "end": 10.5, "text": "Let's start with the vowel sound 'A' as in 'cat'." },
-  { "start": 10.6, "end": 14.0, "text": "Watch my mouth: cat, bat, hat, rat." },
-  { "start": 14.1, "end": 17.5, "text": "Now let's practice the 'E' sound in 'bed'." },
-  { "start": 17.6, "end": 21.0, "text": "Say with me: bed, red, head, said." },
-  { "start": 21.1, "end": 24.5, "text": "Next is the 'I' sound in 'sit'." },
-  { "start": 24.6, "end": 28.0, "text": "Practice: sit, bit, hit, fit." },
-  { "start": 28.1, "end": 31.5, "text": "Now the 'O' sound in 'dog'." },
-  { "start": 31.6, "end": 35.0, "text": "Repeat: dog, log, hot, pot." },
-  { "start": 35.1, "end": 38.5, "text": "Finally, the 'U' sound in 'cup'." },
-  { "start": 38.6, "end": 42.0, "text": "Say: cup, cut, luck, sun." },
-  { "start": 42.1, "end": 45.5, "text": "Practice these sounds every day." },
-  { "start": 45.6, "end": 49.0, "text": "Good pronunciation helps you communicate clearly." },
-  { "start": 49.1, "end": 52.0, "text": "Thank you for practicing with me today!" }
-]
+{
+  "videoId": "jNQXAC9IVRw",
+  "title": "Phát âm chuẩn",
+  "description": "Học cách phát âm 44 âm tiết",
+  "duration": "20 phút",
+  "level": "Intermediate",
+  "subtitles": [
+    { "start": 0.0, "end": 3.5, "text": "Welcome to our English pronunciation lesson!" },
+    { "start": 3.6, "end": 7.0, "text": "Today we will practice English sounds and words." },
+    { "start": 7.1, "end": 10.5, "text": "Let's start with the vowel sound 'A' as in 'cat'." },
+    { "start": 10.6, "end": 14.0, "text": "Watch my mouth: cat, bat, hat, rat." },
+    { "start": 14.1, "end": 17.5, "text": "Now let's practice the 'E' sound in 'bed'." },
+    { "start": 17.6, "end": 21.0, "text": "Say with me: bed, red, head, said." },
+    { "start": 21.1, "end": 24.5, "text": "Next is the 'I' sound in 'sit'." },
+    { "start": 24.6, "end": 28.0, "text": "Practice: sit, bit, hit, fit." },
+    { "start": 28.1, "end": 31.5, "text": "Now the 'O' sound in 'dog'." },
+    { "start": 31.6, "end": 35.0, "text": "Repeat: dog, log, hot, pot." },
+    { "start": 35.1, "end": 38.5, "text": "Finally, the 'U' sound in 'cup'." },
+    { "start": 38.6, "end": 42.0, "text": "Say: cup, cut, luck, sun." },
+    { "start": 42.1, "end": 45.5, "text": "Practice these sounds every day." },
+    { "start": 45.6, "end": 49.0, "text": "Good pronunciation helps you communicate clearly." },
+    { "start": 49.1, "end": 52.0, "text": "Thank you for practicing with me today!" }
+  ]
+}

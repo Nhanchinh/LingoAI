@@ -1,17 +1,24 @@
-[
-  { "start": 0.0, "end": 3.5, "text": "Welcome to our TOEIC vocabulary lesson!" },
-  { "start": 3.6, "end": 7.0, "text": "Today we will learn essential TOEIC words." },
-  { "start": 7.1, "end": 10.5, "text": "First word is 'achieve' meaning to accomplish something." },
-  { "start": 10.6, "end": 14.0, "text": "Example: We achieved our sales target this quarter." },
-  { "start": 14.1, "end": 17.5, "text": "Next word is 'acquire' meaning to obtain or get." },
-  { "start": 17.6, "end": 21.0, "text": "Example: The company acquired three new subsidiaries." },
-  { "start": 21.1, "end": 24.5, "text": "Third word is 'administration' meaning management." },
-  { "start": 24.6, "end": 28.0, "text": "Example: The administration building is on the third floor." },
-  { "start": 28.1, "end": 31.5, "text": "Fourth word is 'advance' meaning to move forward." },
-  { "start": 31.6, "end": 35.0, "text": "Example: Technology continues to advance rapidly." },
-  { "start": 35.1, "end": 38.5, "text": "Fifth word is 'agenda' meaning a list of items." },
-  { "start": 38.6, "end": 42.0, "text": "Example: The meeting agenda includes budget discussion." },
-  { "start": 42.1, "end": 45.5, "text": "These words are essential for TOEIC success." },
-  { "start": 45.6, "end": 49.0, "text": "Practice regularly to improve your TOEIC score." },
-  { "start": 49.1, "end": 52.0, "text": "Thank you for studying TOEIC vocabulary with us!" }
-]
+{
+  "videoId": "M7lc1UVf-VE",
+  "title": "Từ vựng TOEIC",
+  "description": "500 từ vựng TOEIC cần thiết",
+  "duration": "45 phút",
+  "level": "Advanced",
+  "subtitles": [
+    { "start": 0.0, "end": 3.5, "text": "Welcome to our TOEIC vocabulary lesson!" },
+    { "start": 3.6, "end": 7.0, "text": "Today we will learn essential TOEIC words." },
+    { "start": 7.1, "end": 10.5, "text": "First word is 'achieve' meaning to accomplish something." },
+    { "start": 10.6, "end": 14.0, "text": "Example: We achieved our sales target this quarter." },
+    { "start": 14.1, "end": 17.5, "text": "Next word is 'acquire' meaning to obtain or get." },
+    { "start": 17.6, "end": 21.0, "text": "Example: The company acquired three new subsidiaries." },
+    { "start": 21.1, "end": 24.5, "text": "Third word is 'administration' meaning management." },
+    { "start": 24.6, "end": 28.0, "text": "Example: The administration building is on the third floor." },
+    { "start": 28.1, "end": 31.5, "text": "Fourth word is 'advance' meaning to move forward." },
+    { "start": 31.6, "end": 35.0, "text": "Example: Technology continues to advance rapidly." },
+    { "start": 35.1, "end": 38.5, "text": "Fifth word is 'agenda' meaning a list of items." },
+    { "start": 38.6, "end": 42.0, "text": "Example: The meeting agenda includes budget discussion." },
+    { "start": 42.1, "end": 45.5, "text": "These words are essential for TOEIC success." },
+    { "start": 45.6, "end": 49.0, "text": "Practice regularly to improve your TOEIC score." },
+    { "start": 49.1, "end": 52.0, "text": "Thank you for studying TOEIC vocabulary with us!" }
+  ]
+}

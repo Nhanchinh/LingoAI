@@ -509,13 +509,11 @@ fun AppNavGraph(
                 VideoStudyScreen(
                     onBack = { navController.popBackStack() },
                     onVideoClick = { videoId, title, description ->
-                        // Tìm subtitle file name dựa trên title
+                        // Tìm subtitle file name dựa trên title (fallback mapping)
                         val subtitleFile = when (title) {
                             "Học từ vựng cơ bản" -> "subtitle_basic_vocab.json"
                             "Phát âm chuẩn" -> "subtitle_pronunciation.json"
                             "Từ vựng TOEIC" -> "subtitle_toeic.json"
-                            "Từ vựng IELTS" -> "subtitle_basic_vocab.json"
-                            "Từ vựng giao tiếp" -> "subtitle_pronunciation.json"
                             else -> null
                         }
                         val subtitleParam = subtitleFile ?: "none"

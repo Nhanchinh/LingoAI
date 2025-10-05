@@ -12,7 +12,7 @@ data class Subtitle(
     val text: String
 )
 
-// Model cho video với phụ đề
+// Model cho video với phụ đề (cấu trúc cũ - để tương thích ngược)
 data class VideoWithSubtitle(
     val videoId: String,
     val title: String,
@@ -20,4 +20,20 @@ data class VideoWithSubtitle(
     val duration: String,
     val level: String,
     val subtitleFileName: String // Tên file JSON chứa phụ đề
+)
+
+// Model mới cho video info từ JSON file
+data class VideoInfo(
+    @SerializedName("videoId")
+    val videoId: String,
+    @SerializedName("title")
+    val title: String,
+    @SerializedName("description")
+    val description: String,
+    @SerializedName("duration")
+    val duration: String,
+    @SerializedName("level")
+    val level: String,
+    @SerializedName("subtitles")
+    val subtitles: List<Subtitle>
 )

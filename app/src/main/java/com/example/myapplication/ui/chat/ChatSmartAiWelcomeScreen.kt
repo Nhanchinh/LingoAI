@@ -12,14 +12,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
@@ -42,6 +45,7 @@ import androidx.core.content.ContextCompat
 import com.example.myapplication.R
 import com.example.myapplication.api.ApiService
 import com.example.myapplication.models.Character
+import com.example.myapplication.models.Conversation
 import com.example.myapplication.models.VoiceOption
 import com.example.myapplication.ui.theme.ButtonPrimary
 import com.example.myapplication.ui.theme.ButtonSecondary
@@ -64,6 +68,7 @@ fun ChatSmartAiWelcomeScreen(
     onRecordStart: () -> Unit = {},
     onRecordStop: (((String) -> Unit) -> Unit) = {},
     onNavigate: (String, Character) -> Unit = { _, _ -> },
+    onNavigateWithConversation: (Character, String) -> Unit = { _, _ -> }, // New callback for conversation navigation
     onCharacterSelected: ((Character) -> Unit)? = null // New callback for direct character selection
 ) {
     val context = LocalContext.current
@@ -76,6 +81,7 @@ fun ChatSmartAiWelcomeScreen(
     var selectedCharacter by remember { mutableStateOf<Character?>(null) }
     var showCreateCharacterDialog by remember { mutableStateOf(false) }
     var showManageCharactersDialog by remember { mutableStateOf(false) }
+    var showConversationsDialog by remember { mutableStateOf<Character?>(null) }
     var isLoadingCharacters by remember { mutableStateOf(false) }
 
     // Load characters from API when screen initializes
@@ -435,6 +441,23 @@ fun ChatSmartAiWelcomeScreen(
                         selectedCharacter = availableCharacters.firstOrNull()
                         selectedCharacter?.let { onCharacterSelected?.invoke(it) }
                     }
+                },
+                onViewConversations = { character ->
+                    showManageCharactersDialog = false
+                    showConversationsDialog = character
+                }
+            )
+        }
+        
+        // Conversations List Dialog
+        showConversationsDialog?.let { character ->
+            ConversationsListDialog(
+                character = character,
+                onDismiss = { showConversationsDialog = null },
+                onConversationSelected = { conversation ->
+                    showConversationsDialog = null
+                    // Navigate to ChatScreen with conversation history
+                    onNavigateWithConversation(character, conversation.id)
                 }
             )
         }
@@ -558,7 +581,8 @@ fun ManageCharactersDialog(
     characters: List<Character>,
     onDismiss: () -> Unit,
     onCharacterUpdated: (Character) -> Unit,
-    onCharacterDeleted: (Character) -> Unit
+    onCharacterDeleted: (Character) -> Unit,
+    onViewConversations: (Character) -> Unit
 ) {
     val context = LocalContext.current
     var selectedCharacterToEdit by remember { mutableStateOf<Character?>(null) }
@@ -623,8 +647,7 @@ fun ManageCharactersDialog(
                                     showDeleteConfirmDialog = character
                                 },
                                 onViewConversations = {
-                                    // TODO: Implement view conversations
-                                    Toast.makeText(context, "Xem hội thoại với ${character.name}", Toast.LENGTH_SHORT).show()
+                                    onViewConversations(character)
                                 }
                             )
                             Spacer(modifier = Modifier.height(8.dp))
@@ -778,7 +801,7 @@ fun CharacterManageItem(
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.PlayArrow,
+                        imageVector = Icons.Default.Message,
                         contentDescription = "View Conversations",
                         tint = Color.Gray,
                         modifier = Modifier.size(20.dp)
@@ -858,11 +881,14 @@ fun EditCharacterDialog(
                         name = it
                         nameError = false
                     },
-                    label = { Text("Tên nhân vật") },
+                    label = { Text("Tên nhân vật (English)") },
+                    placeholder = { Text("e.g., Emma, Alex, Teacher...") },
                     isError = nameError,
                     supportingText = if (nameError) {
-                        { Text("Vui lòng nhập tên nhân vật") }
-                    } else null,
+                        { Text("Vui lòng nhập tên nhân vật bằng tiếng Anh") }
+                    } else {
+                        { Text("💡 Nhập bằng tiếng Anh", color = Color.Gray, fontSize = 11.sp) }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -880,11 +906,14 @@ fun EditCharacterDialog(
                         description = it
                         descriptionError = false
                     },
-                    label = { Text("Mô tả ngắn") },
+                    label = { Text("Mô tả ngắn (English)") },
+                    placeholder = { Text("e.g., A friendly English teacher...") },
                     isError = descriptionError,
                     supportingText = if (descriptionError) {
-                        { Text("Vui lòng nhập mô tả") }
-                    } else null,
+                        { Text("Vui lòng nhập mô tả bằng tiếng Anh") }
+                    } else {
+                        { Text("💡 Nhập bằng tiếng Anh", color = Color.Gray, fontSize = 11.sp) }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1061,11 +1090,14 @@ fun CreateCharacterDialog(
                         name = it
                         nameError = false
                     },
-                    label = { Text("Tên nhân vật") },
+                    label = { Text("Tên nhân vật (English)") },
+                    placeholder = { Text("e.g., Emma, Alex, Teacher...") },
                     isError = nameError,
                     supportingText = if (nameError) {
-                        { Text("Vui lòng nhập tên nhân vật") }
-                    } else null,
+                        { Text("Vui lòng nhập tên nhân vật bằng tiếng Anh") }
+                    } else {
+                        { Text("💡 Nhập bằng tiếng Anh", color = Color.Gray, fontSize = 11.sp) }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1083,11 +1115,14 @@ fun CreateCharacterDialog(
                         description = it
                         descriptionError = false
                     },
-                    label = { Text("Mô tả ngắn") },
+                    label = { Text("Mô tả ngắn (English)") },
+                    placeholder = { Text("e.g., A friendly English teacher...") },
                     isError = descriptionError,
                     supportingText = if (descriptionError) {
-                        { Text("Vui lòng nhập mô tả") }
-                    } else null,
+                        { Text("Vui lòng nhập mô tả bằng tiếng Anh") }
+                    } else {
+                        { Text("💡 Nhập bằng tiếng Anh", color = Color.Gray, fontSize = 11.sp) }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1145,12 +1180,14 @@ fun CreateCharacterDialog(
                         personality = it
                         personalityError = false
                     },
-                    label = { Text("Tính cách & Cách trò chuyện") },
-                    placeholder = { Text("Ví dụ: Bạn là một trợ lý thân thiện và hữu ích...") },
+                    label = { Text("Tính cách & Cách trò chuyện (English)") },
+                    placeholder = { Text("You are a friendly and helpful assistant. You speak clearly and explain things well...") },
                     isError = personalityError,
                     supportingText = if (personalityError) {
-                        { Text("Vui lòng nhập tính cách nhân vật") }
-                    } else null,
+                        { Text("Vui lòng nhập tính cách bằng tiếng Anh") }
+                    } else {
+                        { Text("💡 Mô tả tính cách bằng tiếng Anh để AI hiểu rõ hơn", color = Color.Gray, fontSize = 11.sp) }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(min = 100.dp),
@@ -1220,6 +1257,253 @@ fun CreateCharacterDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(16.dp)
     )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ConversationsListDialog(
+    character: Character,
+    onDismiss: () -> Unit,
+    onConversationSelected: (Conversation) -> Unit
+) {
+    val context = LocalContext.current
+    var conversations by remember { mutableStateOf<List<Conversation>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Load conversations when dialog opens
+    LaunchedEffect(character.id) {
+        isLoading = true
+        errorMessage = null
+        ApiService.getUserConversations { statusCode, response ->
+            isLoading = false
+            if (statusCode == 200 && response != null) {
+                try {
+                    val jsonResponse = JSONObject(response)
+                    val conversationsArray = jsonResponse.getJSONArray("data")
+                    val allConversations = Conversation.fromApiResponseList(conversationsArray)
+                    
+                    // Filter conversations for this character
+                    conversations = allConversations.filter { it.characterId == character.id }
+                    
+                    Log.d("ConversationsDialog", "Loaded ${conversations.size} conversations for ${character.name}")
+                } catch (e: Exception) {
+                    Log.e("ConversationsDialog", "Error parsing conversations: ${e.message}")
+                    errorMessage = "Lỗi khi tải hội thoại"
+                }
+            } else {
+                errorMessage = "Không thể tải hội thoại"
+                Log.e("ConversationsDialog", "Failed to load conversations: $statusCode - $response")
+            }
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Column {
+                Text(
+                    "Hội thoại với ${character.name}",
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    "${conversations.size} cuộc hội thoại",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    fontWeight = FontWeight.Normal
+                )
+            }
+        },
+        text = {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp)
+            ) {
+                when {
+                    isLoading -> {
+                        // Loading state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    color = ButtonPrimary,
+                                    strokeWidth = 3.dp
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    "Đang tải hội thoại...",
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                    }
+                    errorMessage != null -> {
+                        // Error state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "❌",
+                                    fontSize = 48.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    errorMessage!!,
+                                    color = Color.Red,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                    conversations.isEmpty() -> {
+                        // Empty state
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    "💬",
+                                    fontSize = 48.sp
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    "Chưa có hội thoại nào",
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Hãy bắt đầu trò chuyện với ${character.name}!",
+                                    fontSize = 12.sp,
+                                    color = Color.Gray,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                    else -> {
+                        // Conversations list
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(conversations) { conversation ->
+                                ConversationItem(
+                                    conversation = conversation,
+                                    onClick = { onConversationSelected(conversation) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng", color = ButtonPrimary)
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
+
+@Composable
+fun ConversationItem(
+    conversation: Conversation,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        onClick = onClick
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Conversation Icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = ButtonPrimary.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(24.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "💬",
+                    fontSize = 24.sp
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // Conversation Info
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = conversation.title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                // Show last message preview if available
+                if (conversation.messages.isNotEmpty()) {
+                    val lastMessage = conversation.messages.last()
+                    Text(
+                        text = "${if (lastMessage.isUser) "Bạn" else "AI"}: ${lastMessage.content}",
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        maxLines = 1
+                    )
+                }
+                
+                // Show message count
+                Text(
+                    text = "${conversation.messages.size} tin nhắn",
+                    fontSize = 10.sp,
+                    color = Color.Gray
+                )
+            }
+            
+            // Arrow icon
+            Icon(
+                imageVector = Icons.Default.PlayArrow,
+                contentDescription = "Open conversation",
+                tint = ButtonPrimary,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+    }
 }
 
 @Preview(showBackground = true)

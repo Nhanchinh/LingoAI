@@ -47,6 +47,7 @@ import org.json.JSONObject
 fun ChatSmartAiChatScreen(
     sentence: String,
     selectedCharacter: Character? = null,
+    existingConversationId: String? = null, // New parameter for loading existing conversation
     onBack: () -> Unit = {},
     onRecordStart: () -> Unit = {},
     onRecordStop: (((String) -> Unit) -> Unit) = {},
@@ -60,8 +61,9 @@ fun ChatSmartAiChatScreen(
         mutableStateOf(selectedCharacter ?: Character.DEFAULT_CHARACTERS[0]) // Default to Heart
     }
     
-    // Conversation management
-    var conversationId by remember { mutableStateOf<String?>(null) }
+    // Conversation management - initialize with existingConversationId if provided
+    var conversationId by remember { mutableStateOf(existingConversationId) }
+    var isLoadingHistory by remember { mutableStateOf(existingConversationId != null) }
 
     // ✅ BỎ AudioScreenWrapper, tự quản lý DisposableEffect
     DisposableEffect(screenId) {
@@ -72,7 +74,69 @@ fun ChatSmartAiChatScreen(
 
     val coroutineScope = rememberCoroutineScope()
     var messages by remember {
-        mutableStateOf(listOf(ChatMessage("User", sentence, true)))
+        mutableStateOf(
+            if (existingConversationId == null) {
+                listOf(ChatMessage("User", sentence, true))
+            } else {
+                emptyList() // Will be loaded from conversation history
+            }
+        )
+    }
+    
+    // Load conversation history if existingConversationId is provided
+    LaunchedEffect(existingConversationId) {
+        Log.d("ChatSmartAI", "LaunchedEffect triggered with existingConversationId: $existingConversationId")
+        if (existingConversationId != null) {
+            Log.d("ChatSmartAI", "Starting to load conversation history for ID: $existingConversationId")
+            isLoadingHistory = true
+            ApiService.getConversationHistory(existingConversationId) { statusCode, response ->
+                Log.d("ChatSmartAI", "API Response - Status: $statusCode")
+                Log.d("ChatSmartAI", "API Response - Body: $response")
+                isLoadingHistory = false
+                if (statusCode == 200 && response != null) {
+                    try {
+                        val jsonResponse = JSONObject(response)
+                        Log.d("ChatSmartAI", "Parsed JSON Response: $jsonResponse")
+                        
+                        val conversationData = jsonResponse.getJSONObject("data")
+                        Log.d("ChatSmartAI", "Conversation data: $conversationData")
+                        
+                        val messagesArray = conversationData.getJSONArray("messages")
+                        Log.d("ChatSmartAI", "Messages array length: ${messagesArray.length()}")
+                        Log.d("ChatSmartAI", "Messages array: $messagesArray")
+                        
+                        val loadedMessages = mutableListOf<ChatMessage>()
+                        for (i in 0 until messagesArray.length()) {
+                            val msgJson = messagesArray.getJSONObject(i)
+                            Log.d("ChatSmartAI", "Processing message $i: $msgJson")
+                            val role = msgJson.getString("role")
+                            val content = msgJson.getString("content")
+                            Log.d("ChatSmartAI", "Message $i - Role: $role, Content: $content")
+                            loadedMessages.add(
+                                ChatMessage(
+                                    sender = if (role == "user") "User" else "AI",
+                                    text = content,
+                                    isUser = role == "user"
+                                )
+                            )
+                        }
+                        
+                        messages = loadedMessages
+                        Log.d("ChatSmartAI", "Successfully loaded ${loadedMessages.size} messages from conversation history")
+                        Log.d("ChatSmartAI", "Messages list: $messages")
+                    } catch (e: Exception) {
+                        Log.e("ChatSmartAI", "Error loading conversation history", e)
+                        Log.e("ChatSmartAI", "Error message: ${e.message}")
+                        Log.e("ChatSmartAI", "Stack trace: ${e.stackTraceToString()}")
+                    }
+                } else {
+                    Log.e("ChatSmartAI", "Failed to load conversation history - Status: $statusCode")
+                    Log.e("ChatSmartAI", "Response body: $response")
+                }
+            }
+        } else {
+            Log.d("ChatSmartAI", "No existing conversation ID, skipping history load")
+        }
     }
 
     // Thêm state để theo dõi trạng thái đang chờ phản hồi

@@ -72,6 +72,7 @@ object Routes {
     const val VOCAB_INFO = "vocab_info"
     const val CHAT_SMART_AI_WELCOME = "chat_smart_ai_welcome"
     const val CHAT_SMART_AI_CHAT = "chat_smart_ai_chat"
+    const val CHAT_SMART_AI_CHAT_WITH_CONVERSATION = "chat_smart_ai_chat_with_conversation"
 
     const val FLASHCARD_DETAIL = "flashcard_detail" // THÊM DÒNG NÀY
     const val FLASHCARD_STUDY = "flashcard_study"   // THÊM DÒNG NÀY
@@ -367,6 +368,11 @@ fun AppNavGraph(
                         val characterJson = "{\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
                         val encodedCharacterJson = java.net.URLEncoder.encode(characterJson, "UTF-8")
                         navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence?characterData=$encodedCharacterJson")
+                    },
+                    onNavigateWithConversation = { character, conversationId ->
+                        val characterJson = "{\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
+                        val encodedCharacterJson = java.net.URLEncoder.encode(characterJson, "UTF-8")
+                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT_WITH_CONVERSATION}/$conversationId?characterData=$encodedCharacterJson")
                     }
                 )
             }
@@ -419,6 +425,66 @@ fun AppNavGraph(
                 ChatSmartAiChatScreen(
                     sentence = sentence,
                     selectedCharacter = selectedCharacter,
+                    onRecordStart = { recordingManager.startRecording() },
+                    onRecordStop = { callback ->
+                        recordingManager.stopRecording { transcription ->
+                            transcription?.let { callback(it) }
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
+                    onPlayAudio = { text -> recordingManager.playAudioFromText(text) }
+                )
+            }
+
+            // New route for chat with existing conversation
+            composable(
+                route = "${Routes.CHAT_SMART_AI_CHAT_WITH_CONVERSATION}/{conversationId}?characterData={characterData}",
+                arguments = listOf(
+                    navArgument("conversationId") { type = NavType.StringType },
+                    navArgument("characterData") { 
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: ""
+                val characterData = backStackEntry.arguments?.getString("characterData") ?: ""
+                
+                // Parse character from JSON data
+                val selectedCharacter = if (characterData.isNotEmpty()) {
+                    try {
+                        val json = org.json.JSONObject(characterData)
+                        val character = Character(
+                            id = "", // Will be loaded from conversation
+                            name = json.optString("name", "Lingoo"),
+                            personality = json.optString("personality", ""),
+                            description = json.optString("description", ""),
+                            voiceId = json.optString("voice", "alloy"),
+                            isActive = true
+                        )
+                        character
+                    } catch (e: Exception) {
+                        Log.e("NavGraph", "Error parsing character data: ${e.message}")
+                        Character.DEFAULT_CHARACTERS.firstOrNull()
+                    }
+                } else Character.DEFAULT_CHARACTERS.firstOrNull()
+                
+                ChatSmartAiChatScreen(
+                    sentence = "", // Empty because we're loading from conversation
+                    selectedCharacter = selectedCharacter,
+                    existingConversationId = conversationId,
                     onRecordStart = { recordingManager.startRecording() },
                     onRecordStop = { callback ->
                         recordingManager.stopRecording { transcription ->

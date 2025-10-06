@@ -86,7 +86,7 @@ fun YouTubePlayerComposable(
                             // Điều này sẽ hoạt động đúng cả khi tua video
                             val sub = subtitles.find {
                                 second >= it.start && second <= it.end
-                            }
+                               }
                             onSubtitleUpdate(sub?.text ?: "")
                         }
                         

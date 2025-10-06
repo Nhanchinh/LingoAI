@@ -98,42 +98,36 @@ fun VideoPlayerScreen(
                     
                     // Phần phụ đề với chiều cao cố định để tránh layout jump
                     Spacer(modifier = Modifier.height(16.dp))
-                    Card(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(80.dp), // Chiều cao cố định
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (currentSubtitle.isNotEmpty()) 
-                                Color.Black.copy(alpha = 0.8f) 
-                            else 
-                                Color.Transparent
-                        ),
-                        elevation = CardDefaults.cardElevation(
-                            defaultElevation = if (currentSubtitle.isNotEmpty()) 4.dp else 0.dp
-                        )
+                            .height(80.dp) // Chiều cao cố định
+                            .background(
+                                color = MainColor.copy(alpha = 0.9f), // Background đẹp hơn
+                                shape = RoundedCornerShape(12.dp)
+                            )
                     ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (currentSubtitle.isNotEmpty()) {
-                                Text(
-                                    text = currentSubtitle,
-                                    color = Color.White,
-                                    fontSize = 18.sp,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(16.dp)
-                                )
-                            }
-                        }
+                        Text(
+                            text = currentSubtitle, // Hiển thị text hoặc rỗng
+                            color = Color.White,
+                            fontSize = 16.sp, // Giảm font size để fit nhiều text hơn
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(12.dp), // Giảm padding để có nhiều không gian hơn
+                            maxLines = 3,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                            lineHeight = 20.sp // Đặt line height cố định
+                        )
                     }
                     
-                    // Nút thu âm
-                    if (currentSubtitle.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(16.dp))
+                    // Nút thu âm với chiều cao cố định
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp) // Chiều cao cố định cho button
+                    ) {
                         Button(
                             onClick = {
                                 if (isRecording) {
@@ -159,7 +153,10 @@ fun VideoPlayerScreen(
                                 containerColor = if (isRecording) Color.Red else ButtonPrimary
                             ),
                             shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
+                             modifier = Modifier
+                                .width(200.dp) // Độ rộng cố định
+                                .align(Alignment.Center),
+                            enabled = currentSubtitle.isNotEmpty() // Disable khi không có subtitle
                         ) {
                             Icon(
                                 imageVector = if (isRecording) Icons.Default.MicOff else Icons.Default.Mic,
@@ -173,10 +170,16 @@ fun VideoPlayerScreen(
                                 fontWeight = FontWeight.Medium
                             )
                         }
-                        
-                        // Hiển thị trạng thái thu âm
+                    }
+                    
+                    // Hiển thị trạng thái thu âm với chiều cao cố định
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp) // Chiều cao cố định cho status text
+                    ) {
                         if (isRecording) {
-                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "🎤 Đang nghe... Hãy nói câu: \"$currentSubtitle\"",
                                 fontSize = 14.sp,
@@ -184,13 +187,9 @@ fun VideoPlayerScreen(
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier.fillMaxWidth()
                             )
-                        }
-                        
-                        // Hiển thị lỗi thu âm nếu có
-                        recordingError?.let { error ->
-                            Spacer(modifier = Modifier.height(8.dp))
+                        } else if (recordingError != null) {
                             Text(
-                                text = "❌ Lỗi: $error",
+                                text = "❌ Lỗi: $recordingError",
                                 fontSize = 14.sp,
                                 color = Color.Red,
                                 textAlign = TextAlign.Center,

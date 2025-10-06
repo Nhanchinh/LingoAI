@@ -11,13 +11,11 @@ object VideoDataManager {
      * Đọc tất cả file JSON video từ assets và tạo danh sách video
      */
     suspend fun loadAllVideos(context: Context): List<VideoWithSubtitle> = withContext(Dispatchers.IO) {
-        val videoFiles = listOf(
-            "subtitle_basic_vocab.json",
-            "subtitle_pronunciation.json", 
-            "subtitle_toeic.json",
-            "subtitle_ielts.json",
-            "subtitle_conversation.json"
-        )
+        // Tự động scan tất cả file subtitle_*.json từ assets
+        val allFiles = context.assets.list("") ?: emptyArray()
+        val videoFiles = allFiles.filter { 
+            it.startsWith("subtitle_") && it.endsWith(".json") 
+        }.sorted() // Sắp xếp để có thứ tự nhất quán
         
         val videos = mutableListOf<VideoWithSubtitle>()
         val gson = Gson()

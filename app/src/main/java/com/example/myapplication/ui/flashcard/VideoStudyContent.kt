@@ -35,7 +35,7 @@ data class DemoVideo(
 // VIDEO STUDY CONTENT - Nội dung học qua video
 @Composable
 fun VideoStudyContent(
-    onVideoClick: (String, String, String) -> Unit = { _, _, _ -> }
+    onVideoClick: (String, String, String, String?) -> Unit = { _, _, _, _ -> }
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -122,7 +122,7 @@ fun VideoStudyContent(
                 DemoVideoCard(
                     video = video,
                     onClick = {
-                        onVideoClick(video.videoId, video.title, video.description)
+                        onVideoClick(video.videoId, video.title, video.description, video.subtitleFileName)
                     }
                 )
             }

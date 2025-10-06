@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 import com.example.myapplication.api.ApiService
+import com.example.myapplication.models.Character
+import com.example.myapplication.models.VoiceOption
 import com.example.myapplication.ui.chat.AudioManager
 import com.example.myapplication.ui.common.AudioScreenWrapper
 import com.example.myapplication.ui.theme.ButtonPrimary
@@ -44,6 +46,7 @@ import org.json.JSONObject
 @Composable
 fun ChatSmartAiChatScreen(
     sentence: String,
+    selectedCharacter: Character? = null,
     onBack: () -> Unit = {},
     onRecordStart: () -> Unit = {},
     onRecordStop: (((String) -> Unit) -> Unit) = {},
@@ -51,6 +54,14 @@ fun ChatSmartAiChatScreen(
 ) {
     // Tạo screenId cho audio management
     val screenId = remember { "chat_smart_ai_${System.currentTimeMillis()}" }
+    
+    // Character management - use selected character or default
+    var currentCharacter by remember { 
+        mutableStateOf(selectedCharacter ?: Character.DEFAULT_CHARACTERS[1]) // Default to Heart
+    }
+    
+    // Conversation management
+    var conversationId by remember { mutableStateOf<String?>(null) }
 
     // ✅ BỎ AudioScreenWrapper, tự quản lý DisposableEffect
     DisposableEffect(screenId) {
@@ -125,7 +136,13 @@ fun ChatSmartAiChatScreen(
             // Hiển thị animation chờ
             isWaitingForResponse = true
 
-            ApiService.generateText(lastMessage.text) { code, response ->
+            // Use enhanced generateText with character and conversation context
+            ApiService.generateText(
+                query = lastMessage.text,
+                characterId = currentCharacter.id.ifEmpty { null },
+                conversationId = conversationId,
+                userId = null // Will use default USER_ID from ApiService
+            ) { code, response ->
                 // Khi có phản hồi, ẩn animation chờ
                 isWaitingForResponse = false
 
@@ -133,11 +150,19 @@ fun ChatSmartAiChatScreen(
                     try {
                         val json = JSONObject(response)
                         val textResponse = json.optString("response", "")
+                        
+                        // Update conversation ID if returned from API
+                        val returnedConversationId = json.optString("conversation_id", "")
+                        if (returnedConversationId.isNotEmpty() && conversationId == null) {
+                            conversationId = returnedConversationId
+                            Log.d("ChatSmartAI", "Set conversation ID: $conversationId")
+                        }
+                        
                         if (textResponse.isNotEmpty()) {
-                            val aiMessage = ChatMessage("Lingoo", textResponse, false)
+                            val aiMessage = ChatMessage(currentCharacter.name, textResponse, false)
                             coroutineScope.launch {
                                 messages = messages + aiMessage
-                                Log.d("ChatSmartAI", "Added AI response: $textResponse")
+                                Log.d("ChatSmartAI", "Added AI response from ${currentCharacter.name}: $textResponse")
                             }
                         }
                     } catch (e: Exception) {
@@ -181,12 +206,20 @@ fun ChatSmartAiChatScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "ChatSmart AI",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    fontFamily = FontFamily.Serif
-                )
+                Column {
+                    Text(
+                        "ChatSmart AI",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 28.sp,
+                        fontFamily = FontFamily.Serif
+                    )
+                    Text(
+                        "Chatting with ${currentCharacter.name}",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        fontFamily = FontFamily.Default
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -207,7 +240,8 @@ fun ChatSmartAiChatScreen(
                 items(messages) { msg ->
                     ChatBubbleWithAnimation(
                         message = msg, 
-                        screenId = screenId,  // ← Truyền screenId
+                        character = currentCharacter,
+                        screenId = screenId,
                         onPlayAudio = onPlayAudio
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -216,7 +250,7 @@ fun ChatSmartAiChatScreen(
                 // Hiển thị loading animation khi đang chờ phản hồi
                 if (isWaitingForResponse) {
                     item {
-                        TypingIndicator()
+                        TypingIndicator(characterName = currentCharacter.name)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
@@ -314,7 +348,8 @@ fun ChatSmartAiChatScreen(
 @Composable
 fun ChatBubbleWithAnimation(
     message: ChatMessage,
-    screenId: String,  // ← Thêm parameter này
+    character: Character,
+    screenId: String,
     onPlayAudio: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -365,11 +400,12 @@ fun ChatBubbleWithAnimation(
                             AudioManager.stopCurrentAudio()
                             isLoading = true
 
-                            // ✅ ĐẢM BẢO DÙNG ĐÚNG screenId
+                            // ✅ Sử dụng voice của character cho AI responses
                             AudioManager.playAudioFromText(
                                 context = context,
                                 text = message.text,
-                                screenId = screenId,  // ← Quan trọng!
+                                screenId = screenId,
+                                voice = character.voiceId, // Use character voice for AI responses
                                 onStateChange = { isPlaying ->
                                     if (isPlaying) {
                                         kotlinx.coroutines.GlobalScope.launch {
@@ -406,11 +442,12 @@ fun ChatBubbleWithAnimation(
                             AudioManager.stopCurrentAudio()
                             isLoading = true
 
-                            // ✅ ĐẢM BẢO DÙNG ĐÚNG screenId
+                            // ✅ Sử dụng voice mặc định cho user messages (hoặc user voice preference)
                             AudioManager.playAudioFromText(
                                 context = context,
                                 text = message.text,
-                                screenId = screenId,  // ← Quan trọng!
+                                screenId = screenId,
+                                voice = null, // Use default/user preference voice for user messages
                                 onStateChange = { isPlaying ->
                                     if (isPlaying) {
                                         kotlinx.coroutines.GlobalScope.launch {
@@ -459,7 +496,7 @@ fun ChatBubbleWithAnimation(
 }
 
 @Composable
-fun TypingIndicator() {
+fun TypingIndicator(characterName: String = "Lingoo") {
     Row(
         horizontalArrangement = Arrangement.Start,
         modifier = Modifier.fillMaxWidth()
@@ -469,7 +506,7 @@ fun TypingIndicator() {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                "Lingoo",
+                characterName,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp
             )

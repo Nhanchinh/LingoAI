@@ -2,8 +2,8 @@
 package com.example.myapplication.ui.chat
 
 import android.Manifest
-import android.content.pm.PackageManager
 import android.util.Log
+import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,9 +12,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +35,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.myapplication.R
+import com.example.myapplication.api.ApiService
+import com.example.myapplication.models.Character
+import com.example.myapplication.models.VoiceOption
+import com.example.myapplication.ui.theme.ButtonPrimary
 import com.example.myapplication.ui.theme.ButtonSecondary
 import com.example.myapplication.ui.theme.MainColor
 import kotlinx.coroutines.CoroutineScope
@@ -48,12 +56,19 @@ fun ChatSmartAiWelcomeScreen(
     onBack: () -> Unit = {},
     onRecordStart: () -> Unit = {},
     onRecordStop: (((String) -> Unit) -> Unit) = {},
-    onNavigate: (Any?) -> Unit = {}
+    onNavigate: (Any?) -> Unit = {},
+    onCharacterSelect: () -> Unit = {}, // Deprecated - not used anymore
+    onCharacterSelected: ((Character) -> Unit)? = null // New callback for direct character selection
 ) {
     val context = LocalContext.current
     var isRecording by remember { mutableStateOf(false) }
     var isProcessingAudio by remember { mutableStateOf(false) }
     var pressStartTime by remember { mutableStateOf(0L) }
+    
+    // Character management
+    var availableCharacters by remember { mutableStateOf<List<Character>>(Character.DEFAULT_CHARACTERS) }
+    var selectedCharacter by remember { mutableStateOf<Character?>(null) }
+    var showCreateCharacterDialog by remember { mutableStateOf(false) }
 
     // Animation cho mic xoay
     val infiniteTransition = rememberInfiniteTransition(label = "mic_animation")
@@ -117,10 +132,35 @@ fun ChatSmartAiWelcomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onBack) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(32.dp))
+                }
+                
+                // Nút chọn Character với visual feedback
+                Surface(
+                    modifier = Modifier
+                        .size(48.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    color = ButtonPrimary.copy(alpha = 0.1f),
+                    onClick = {
+                        Log.d("ChatWelcome", "Character selection button clicked")
+                        onCharacterSelect()
+                    }
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            Icons.Default.Person, 
+                            contentDescription = "Select Character",
+                            modifier = Modifier.size(28.dp),
+                            tint = ButtonPrimary
+                        )
+                    }
                 }
             }
 
@@ -151,11 +191,41 @@ fun ChatSmartAiWelcomeScreen(
                 fontSize = 18.sp,
                 modifier = Modifier.padding(top = 8.dp)
             )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Character Selection Section
+            Text(
+                "Chọn nhân vật AI:",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.align(Alignment.Start).padding(start = 20.dp)
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Horizontal Character List
+            CharacterSelectionRow(
+                characters = availableCharacters,
+                selectedCharacter = selectedCharacter,
+                onCharacterSelected = { character ->
+                    selectedCharacter = character
+                    Log.d("ChatWelcome", "Selected character: ${character.name}")
+                    onCharacterSelected?.invoke(character)
+                },
+                onCreateNew = {
+                    showCreateCharacterDialog = true
+                }
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
             Spacer(modifier = Modifier.height(16.dp))
             Text(
                 "Nhấn giữ để ghi âm",
                 fontSize = 16.sp,
-                color = Color.DarkGray
+                color = Color.DarkGray,
+                fontWeight = FontWeight.Medium
             )
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -229,8 +299,138 @@ fun ChatSmartAiWelcomeScreen(
 
             Spacer(modifier = Modifier.weight(1f))
         }
+        
+        // Create Character Dialog
+        if (showCreateCharacterDialog) {
+            CreateCharacterDialog(
+                onDismiss = { showCreateCharacterDialog = false },
+                onCharacterCreated = { newCharacter: Character ->
+                    availableCharacters = availableCharacters + newCharacter
+                    selectedCharacter = newCharacter
+                    showCreateCharacterDialog = false
+                    onCharacterSelected?.invoke(newCharacter)
+                }
+            )
+        }
     }
 }
+
+@Composable
+fun CharacterSelectionRow(
+    characters: List<Character>,
+    selectedCharacter: Character?,
+    onCharacterSelected: (Character) -> Unit,
+    onCreateNew: () -> Unit
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp)
+    ) {
+        items(characters) { character ->
+            CharacterCard(
+                character = character,
+                isSelected = selectedCharacter?.name == character.name,
+                onClick = { onCharacterSelected(character) }
+            )
+        }
+        
+        // Add new character button
+        item {
+            Card(
+                modifier = Modifier
+                    .size(100.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = ButtonPrimary.copy(alpha = 0.1f)
+                ),
+                onClick = onCreateNew
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        Icons.Default.Add,
+                        contentDescription = "Add Character",
+                        tint = ButtonPrimary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Tạo mới",
+                        fontSize = 12.sp,
+                        color = ButtonPrimary
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CharacterCard(
+    character: Character,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .size(100.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) ButtonPrimary else Color.White
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 8.dp else 4.dp
+        ),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Character avatar
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = if (isSelected) Color.White else ButtonPrimary.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(20.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = character.name,
+                    tint = if (isSelected) ButtonPrimary else Color.Gray,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            // Character name
+            Text(
+                text = character.name,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isSelected) Color.White else Color.Black,
+                maxLines = 1
+            )
+            
+            // Voice indicator
+            Text(
+                text = "🎤",
+                fontSize = 10.sp
+            )
+        }
+    }
+}
+
+
 
 @Preview(showBackground = true)
 @Composable

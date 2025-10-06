@@ -109,7 +109,7 @@ fun VideoPlayerScreen(
                     ) {
                         Text(
                             text = currentSubtitle, // Hiển thị text hoặc rỗng
-                            color = Color.White,
+                            color = Color.Black,
                             fontSize = 16.sp, // Giảm font size để fit nhiều text hơn
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             modifier = Modifier

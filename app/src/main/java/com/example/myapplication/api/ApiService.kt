@@ -322,11 +322,20 @@ object ApiService {
         }
     }
 
-    // POST /gen-text
-    fun generateText(query: String, callback: (Int, String?) -> Unit) {
+    // POST /gen-text - Enhanced version with character and conversation context
+    fun generateText(
+        query: String, 
+        characterId: String? = null,
+        conversationId: String? = null,
+        userId: String? = null,
+        callback: (Int, String?) -> Unit
+    ) {
         try {
             val json = JSONObject().apply {
                 put("query", query)
+                characterId?.let { put("character_id", it) }
+                conversationId?.let { put("conversation_id", it) }
+                userId?.let { put("user_id", it) } ?: put("user_id", USER_ID)
             }
             val requestBody = json.toString()
                 .toRequestBody("application/json".toMediaType())
@@ -494,6 +503,333 @@ object ApiService {
             USER_ID = userId
             Log.i("ApiService", "USER_ID set to: $USER_ID")
         }
+    }
+
+    // ========== CHARACTER PROFILES API ==========
+
+    // POST /characters - Tạo nhân vật mới
+    fun createCharacter(
+        name: String,
+        personality: String,
+        description: String,
+        voice: String = "af_heart",
+        isActive: Boolean = true,
+        callback: (Int, String?) -> Unit
+    ) {
+        try {
+            val json = JSONObject().apply {
+                put("user_id", USER_ID)
+                put("name", name)
+                put("personality", personality)
+                put("description", description)
+                put("voice_settings", JSONObject().apply {
+                    put("voice", voice)
+                })
+                put("is_active", isActive)
+            }
+
+            val requestBody = json.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$BASE_URL/characters")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "createCharacter failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in createCharacter: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // GET /characters/<user_id> - Lấy danh sách nhân vật của user
+    fun getCharacters(callback: (Int, String?) -> Unit) {
+        try {
+            val request = Request.Builder()
+                .url("$BASE_URL/characters/$USER_ID")
+                .get()
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "getCharacters failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in getCharacters: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // PUT /characters - Cập nhật thông tin nhân vật
+    fun updateCharacter(
+        characterId: String,
+        name: String? = null,
+        personality: String? = null,
+        description: String? = null,
+        voice: String? = null,
+        isActive: Boolean? = null,
+        callback: (Int, String?) -> Unit
+    ) {
+        try {
+            val json = JSONObject().apply {
+                put("character_id", characterId)
+                name?.let { put("name", it) }
+                personality?.let { put("personality", it) }
+                description?.let { put("description", it) }
+                voice?.let {
+                    put("voice_settings", JSONObject().apply {
+                        put("voice", it)
+                    })
+                }
+                isActive?.let { put("is_active", it) }
+            }
+
+            val requestBody = json.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$BASE_URL/characters")
+                .put(requestBody)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "updateCharacter failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in updateCharacter: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // DELETE /characters - Xóa nhân vật và conversations liên quan
+    fun deleteCharacter(characterId: String, callback: (Int, String?) -> Unit) {
+        try {
+            val json = JSONObject().apply {
+                put("character_id", characterId)
+            }
+
+            val requestBody = json.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$BASE_URL/characters")
+                .delete(requestBody)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "deleteCharacter failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in deleteCharacter: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // ========== CONVERSATIONS API ==========
+
+    // POST /conversations - Tạo cuộc hội thoại mới
+    fun createConversation(
+        characterId: String,
+        title: String,
+        callback: (Int, String?) -> Unit
+    ) {
+        try {
+            val json = JSONObject().apply {
+                put("user_id", USER_ID)
+                put("character_id", characterId)
+                put("title", title)
+            }
+
+            val requestBody = json.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$BASE_URL/conversations")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "createConversation failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in createConversation: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // POST /conversations/message - Thêm message vào hội thoại
+    fun addMessageToConversation(
+        conversationId: String,
+        role: String,
+        content: String,
+        callback: (Int, String?) -> Unit
+    ) {
+        try {
+            val json = JSONObject().apply {
+                put("conversation_id", conversationId)
+                put("role", role)
+                put("content", content)
+            }
+
+            val requestBody = json.toString()
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$BASE_URL/conversations/message")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "addMessageToConversation failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in addMessageToConversation: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // GET /conversations/<conversation_id> - Lấy lịch sử hội thoại
+    fun getConversationHistory(conversationId: String, callback: (Int, String?) -> Unit) {
+        try {
+            val request = Request.Builder()
+                .url("$BASE_URL/conversations/$conversationId")
+                .get()
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "getConversationHistory failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in getConversationHistory: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // GET /conversations/user/<user_id> - Lấy danh sách hội thoại của user
+    fun getUserConversations(callback: (Int, String?) -> Unit) {
+        try {
+            val request = Request.Builder()
+                .url("$BASE_URL/conversations/user/$USER_ID")
+                .get()
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "getUserConversations failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in getUserConversations: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // POST /gen-text (Enhanced version với character và conversation context)
+    // Deprecated: Use generateText() with parameters instead
+    fun generateTextWithContext(
+        query: String,
+        characterId: String? = null,
+        conversationId: String? = null,
+        callback: (Int, String?) -> Unit
+    ) {
+        // Redirect to enhanced generateText function
+        generateText(query, characterId, conversationId, USER_ID, callback)
     }
 }
 

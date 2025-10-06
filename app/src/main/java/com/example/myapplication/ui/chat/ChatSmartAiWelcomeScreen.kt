@@ -16,10 +16,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +45,8 @@ import com.example.myapplication.ui.theme.MainColor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 
 data class ChatMessage(
     val sender: String,
@@ -56,8 +59,7 @@ fun ChatSmartAiWelcomeScreen(
     onBack: () -> Unit = {},
     onRecordStart: () -> Unit = {},
     onRecordStop: (((String) -> Unit) -> Unit) = {},
-    onNavigate: (Any?) -> Unit = {},
-    onCharacterSelect: () -> Unit = {}, // Deprecated - not used anymore
+    onNavigate: (String, Character) -> Unit = { _, _ -> },
     onCharacterSelected: ((Character) -> Unit)? = null // New callback for direct character selection
 ) {
     val context = LocalContext.current
@@ -69,6 +71,58 @@ fun ChatSmartAiWelcomeScreen(
     var availableCharacters by remember { mutableStateOf<List<Character>>(Character.DEFAULT_CHARACTERS) }
     var selectedCharacter by remember { mutableStateOf<Character?>(null) }
     var showCreateCharacterDialog by remember { mutableStateOf(false) }
+    var isLoadingCharacters by remember { mutableStateOf(false) }
+
+    // Load characters from API when screen initializes
+    LaunchedEffect(Unit) {
+        isLoadingCharacters = true
+        ApiService.getCharacters { statusCode, response ->
+            isLoadingCharacters = false
+            if (statusCode == 200 && response != null) {
+                try {
+                    val jsonResponse = JSONObject(response)
+                    val charactersArray = jsonResponse.getJSONArray("data")
+                    val apiCharacters = Character.fromApiResponseList(charactersArray)
+                    
+                    // Merge API characters with default characters, avoiding duplicates
+                    val allCharacters = mutableListOf<Character>()
+                    allCharacters.addAll(Character.DEFAULT_CHARACTERS)
+                    
+                    // Add API characters that don't have the same name as default characters
+                    apiCharacters.forEach { apiChar ->
+                        val exists = allCharacters.any { it.name.equals(apiChar.name, ignoreCase = true) }
+                        if (!exists) {
+                            allCharacters.add(apiChar)
+                        }
+                    }
+                    
+                    availableCharacters = allCharacters
+                    
+                    // Auto-select the first character if none is selected
+                    if (selectedCharacter == null && allCharacters.isNotEmpty()) {
+                        selectedCharacter = allCharacters[0]
+                        onCharacterSelected?.invoke(allCharacters[0])
+                    }
+                    
+                    Log.d("ChatWelcome", "Loaded ${apiCharacters.size} characters from API, total: ${allCharacters.size}")
+                } catch (e: Exception) {
+                    Log.e("ChatWelcome", "Error parsing characters: ${e.message}")
+                    // Auto-select first default character if API fails
+                    if (selectedCharacter == null && availableCharacters.isNotEmpty()) {
+                        selectedCharacter = availableCharacters[0]
+                        onCharacterSelected?.invoke(availableCharacters[0])
+                    }
+                }
+            } else {
+                Log.e("ChatWelcome", "Failed to load characters: $statusCode - $response")
+                // Auto-select first default character if API fails
+                if (selectedCharacter == null && availableCharacters.isNotEmpty()) {
+                    selectedCharacter = availableCharacters[0]
+                    onCharacterSelected?.invoke(availableCharacters[0])
+                }
+            }
+        }
+    }
 
     // Animation cho mic xoay
     val infiniteTransition = rememberInfiniteTransition(label = "mic_animation")
@@ -136,7 +190,7 @@ fun ChatSmartAiWelcomeScreen(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", modifier = Modifier.size(32.dp))
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", modifier = Modifier.size(32.dp))
                 }
                 
                 // Nút chọn Character với visual feedback
@@ -145,10 +199,6 @@ fun ChatSmartAiWelcomeScreen(
                         .size(48.dp),
                     shape = RoundedCornerShape(24.dp),
                     color = ButtonPrimary.copy(alpha = 0.1f),
-                    onClick = {
-                        Log.d("ChatWelcome", "Character selection button clicked")
-                        onCharacterSelect()
-                    }
                 ) {
                     Box(
                         contentAlignment = Alignment.Center,
@@ -192,41 +242,65 @@ fun ChatSmartAiWelcomeScreen(
                 modifier = Modifier.padding(top = 8.dp)
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(40.dp))
             
             // Character Selection Section
             Text(
-                "Chọn nhân vật AI:",
+                "Chọn nhân vật AI",
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
-                modifier = Modifier.align(Alignment.Start).padding(start = 20.dp)
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(20.dp))
             
-            // Horizontal Character List
-            CharacterSelectionRow(
-                characters = availableCharacters,
-                selectedCharacter = selectedCharacter,
-                onCharacterSelected = { character ->
-                    selectedCharacter = character
-                    Log.d("ChatWelcome", "Selected character: ${character.name}")
-                    onCharacterSelected?.invoke(character)
-                },
-                onCreateNew = {
-                    showCreateCharacterDialog = true
+            // Horizontal Character List with Loading
+            if (isLoadingCharacters) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = ButtonPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        "Đang tải nhân vật...",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
                 }
-            )
+            } else {
+                CharacterSelectionRow(
+                    characters = availableCharacters,
+                    selectedCharacter = selectedCharacter,
+                    onCharacterSelected = { character ->
+                        selectedCharacter = character
+                        Log.d("ChatWelcome", "Selected character: ${character.name}")
+                        onCharacterSelected?.invoke(character)
+                    },
+                    onCreateNew = {
+                        showCreateCharacterDialog = true
+                    }
+                )
+            }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(32.dp))
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             Text(
                 "Nhấn giữ để ghi âm",
                 fontSize = 16.sp,
                 color = Color.DarkGray,
                 fontWeight = FontWeight.Medium
             )
+            Spacer(modifier = Modifier.height(24.dp))
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Mic button với animations
@@ -241,7 +315,7 @@ fun ChatSmartAiWelcomeScreen(
                                 isRecording = true
                                 onRecordStart()
 
-                                val released = tryAwaitRelease()
+                                tryAwaitRelease()
 
                                 isRecording = false
                                 isProcessingAudio = true
@@ -255,7 +329,9 @@ fun ChatSmartAiWelcomeScreen(
                                         Log.d("Transcription", transcription)
                                         CoroutineScope(Dispatchers.Main).launch {
                                             isProcessingAudio = false
-                                            onNavigate(transcription)
+                                            val character = selectedCharacter ?: Character.DEFAULT_CHARACTERS[0]
+                                            Log.d("Debug", "Final character: ${character.name}")
+                                            onNavigate(transcription, character)
                                         }
                                     }
                                 }
@@ -431,6 +507,207 @@ fun CharacterCard(
 }
 
 
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateCharacterDialog(
+    onDismiss: () -> Unit,
+    onCharacterCreated: (Character) -> Unit
+) {
+    val context = LocalContext.current
+    var name by remember { mutableStateOf("") }
+    var personality by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var selectedVoice by remember { mutableStateOf(VoiceOption.DEFAULT_VOICE) }
+    var showVoiceDropdown by remember { mutableStateOf(false) }
+    var isCreating by remember { mutableStateOf(false) }
+
+    // Validation states
+    var nameError by remember { mutableStateOf(false) }
+    var personalityError by remember { mutableStateOf(false) }
+    var descriptionError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                "Tạo nhân vật mới",
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                // Name field
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = {
+                        name = it
+                        nameError = false
+                    },
+                    label = { Text("Tên nhân vật") },
+                    isError = nameError,
+                    supportingText = if (nameError) {
+                        { Text("Vui lòng nhập tên nhân vật") }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ButtonPrimary,
+                        unfocusedBorderColor = ButtonSecondary
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Description field
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = {
+                        description = it
+                        descriptionError = false
+                    },
+                    label = { Text("Mô tả ngắn") },
+                    isError = descriptionError,
+                    supportingText = if (descriptionError) {
+                        { Text("Vui lòng nhập mô tả") }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ButtonPrimary,
+                        unfocusedBorderColor = ButtonSecondary
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Voice selection
+                ExposedDropdownMenuBox(
+                    expanded = showVoiceDropdown,
+                    onExpandedChange = { showVoiceDropdown = it }
+                ) {
+                    OutlinedTextField(
+                        value = "${selectedVoice.name} (${selectedVoice.language})",
+                        onValueChange = { },
+                        readOnly = true,
+                        label = { Text("Giọng nói") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showVoiceDropdown) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = ButtonPrimary,
+                            unfocusedBorderColor = ButtonSecondary
+                        )
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = showVoiceDropdown,
+                        onDismissRequest = { showVoiceDropdown = false },
+                        modifier = Modifier.heightIn(max = 300.dp)
+                    ) {
+                        VoiceOption.ALL_VOICES.forEach { voice ->
+                            DropdownMenuItem(
+                                text = { Text("${voice.name} (${voice.language})") },
+                                onClick = {
+                                    selectedVoice = voice
+                                    showVoiceDropdown = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Personality field (bigger)
+                OutlinedTextField(
+                    value = personality,
+                    onValueChange = {
+                        personality = it
+                        personalityError = false
+                    },
+                    label = { Text("Tính cách & Cách trò chuyện") },
+                    placeholder = { Text("Ví dụ: Bạn là một trợ lý thân thiện và hữu ích...") },
+                    isError = personalityError,
+                    supportingText = if (personalityError) {
+                        { Text("Vui lòng nhập tính cách nhân vật") }
+                    } else null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 100.dp),
+                    maxLines = 4,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = ButtonPrimary,
+                        unfocusedBorderColor = ButtonSecondary
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    when {
+                        name.isBlank() -> nameError = true
+                        description.isBlank() -> descriptionError = true
+                        personality.isBlank() -> personalityError = true
+                        else -> {
+                            isCreating = true
+                            ApiService.createCharacter(
+                                name = name.trim(),
+                                personality = personality.trim(),
+                                description = description.trim(),
+                                voice = selectedVoice.id
+                            ) { statusCode, response ->
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    isCreating = false
+                                    if (statusCode == 200 || statusCode == 201) {
+                                        try {
+                                            val jsonResponse = JSONObject(response ?: "{}")
+                                            val character = Character.fromApiResponse(jsonResponse)
+                                            onCharacterCreated(character)
+                                            Toast.makeText(context, "Tạo nhân vật thành công!", Toast.LENGTH_SHORT).show()
+                                        } catch (e: Exception) {
+                                            Log.e("CreateCharacter", "Error parsing response: ${e.message}")
+                                            Toast.makeText(context, "Có lỗi xảy ra", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Không thể tạo nhân vật: $response", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                enabled = !isCreating,
+                colors = ButtonDefaults.buttonColors(containerColor = ButtonPrimary)
+            ) {
+                if (isCreating) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text("Tạo nhân vật", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        },
+        containerColor = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp)
+    )
+}
 
 @Preview(showBackground = true)
 @Composable

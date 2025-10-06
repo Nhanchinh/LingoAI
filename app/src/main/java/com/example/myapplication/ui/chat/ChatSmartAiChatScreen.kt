@@ -57,7 +57,7 @@ fun ChatSmartAiChatScreen(
     
     // Character management - use selected character or default
     var currentCharacter by remember { 
-        mutableStateOf(selectedCharacter ?: Character.DEFAULT_CHARACTERS[1]) // Default to Heart
+        mutableStateOf(selectedCharacter ?: Character.DEFAULT_CHARACTERS[0]) // Default to Heart
     }
     
     // Conversation management

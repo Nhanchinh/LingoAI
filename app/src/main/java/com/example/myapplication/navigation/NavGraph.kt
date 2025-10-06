@@ -36,6 +36,7 @@ import com.example.myapplication.ui.wordgenie.WordDetailScreen
 import com.example.myapplication.ui.wordgenie.WordGenieScreen
 import com.example.myapplication.ui.auth.ProfileScreen
 import com.example.myapplication.ui.chat.ChatSmartAiChatScreen
+import com.example.myapplication.models.Character
 import com.example.myapplication.ui.flashcard.FlashcardDetailScreen
 import com.example.myapplication.ui.flashcard.FlashcardScreen
 import com.example.myapplication.ui.flashcard.FlashcardStudyScreen
@@ -362,16 +363,22 @@ fun AppNavGraph(
                             transcription?.let { callback(it) }
                         }
                     },
-                    onNavigate = { sentence ->
-                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence")
+                    onNavigate = { sentence, character ->
+                        val characterJson = "{\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
+                        val encodedCharacterJson = java.net.URLEncoder.encode(characterJson, "UTF-8")
+                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence?characterData=$encodedCharacterJson")
                     }
                 )
             }
 
             composable(
-                route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}",
+                route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}?characterData={characterData}",
                 arguments = listOf(
-                    navArgument("sentence") { type = NavType.StringType }
+                    navArgument("sentence") { type = NavType.StringType },
+                    navArgument("characterData") { 
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
                 ),
                 enterTransition = {
                     slideIntoContainer(
@@ -387,8 +394,30 @@ fun AppNavGraph(
                 }
             ) { backStackEntry ->
                 val sentence = backStackEntry.arguments?.getString("sentence") ?: ""
+                val characterData = backStackEntry.arguments?.getString("characterData") ?: ""
+                
+                // Parse character from JSON data
+                val selectedCharacter = if (characterData.isNotEmpty()) {
+                    try {
+                        val decodedJson = java.net.URLDecoder.decode(characterData, "UTF-8")
+                        val jsonObject = org.json.JSONObject(decodedJson)
+                        val character = Character(
+                            name = jsonObject.getString("name"),
+                            personality = jsonObject.getString("personality"),
+                            description = jsonObject.getString("description"),
+                            voiceId = jsonObject.getString("voice")
+                        )
+                        character
+                    } catch (e: Exception) {
+                        Log.e("NavGraph", "Error parsing character data: ${e.message}")
+                        Log.e("NavGraph", "characterData was: $characterData")
+                        Character.DEFAULT_CHARACTERS.firstOrNull()
+                    }
+                } else Character.DEFAULT_CHARACTERS.firstOrNull()
+                
                 ChatSmartAiChatScreen(
                     sentence = sentence,
+                    selectedCharacter = selectedCharacter,
                     onRecordStart = { recordingManager.startRecording() },
                     onRecordStop = { callback ->
                         recordingManager.stopRecording { transcription ->

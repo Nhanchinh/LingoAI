@@ -40,33 +40,9 @@ data class Character(
         val DEFAULT_CHARACTERS = listOf(
             Character(
                 name = "Emma",
-                personality = "You are Emma, a friendly and intelligent assistant from Britain. You are formal, helpful, and detail-oriented. You provide structured responses and focus on accuracy. You speak with a British accent and use proper English.",
-                description = "Professional British assistant",
-                voiceId = "bf_emma"
-            ),
-            Character(
-                name = "Heart",
-                personality = "You are Heart, a warm and caring assistant. You are empathetic, supportive, and always try to understand people's emotions. You provide encouraging responses and create a comfortable atmosphere.",
-                description = "Warm and caring assistant",
+                personality = "Cheerful, friendly AI",
+                description = "Talks like a lively, supportive best friend",
                 voiceId = "af_heart"
-            ),
-            Character(
-                name = "Bella",
-                personality = "You are Bella, an energetic and enthusiastic assistant. You are creative, fun, and passionate about helping people. You provide exciting and inspiring responses.",
-                description = "Energetic and creative assistant",
-                voiceId = "af_bella"
-            ),
-            Character(
-                name = "Michael",
-                personality = "You are Michael, a professional and knowledgeable assistant. You are analytical, logical, and provide detailed technical explanations. You focus on facts and practical solutions.",
-                description = "Professional technical assistant",
-                voiceId = "am_michael"
-            ),
-            Character(
-                name = "Alpha",
-                personality = "You are Alpha, a calm and wise assistant who speaks Japanese. You are patient, thoughtful, and provide balanced perspectives. You help people find inner peace and clarity.",
-                description = "Calm and wise Japanese assistant",
-                voiceId = "jf_alpha"
             )
         )
 

@@ -400,6 +400,7 @@ fun AppNavGraph(
                 val selectedCharacter = if (characterData.isNotEmpty()) {
                     try {
                         val decodedJson = java.net.URLDecoder.decode(characterData, "UTF-8")
+                        Log.e("NavGraph", "decodedJson: ${decodedJson}")
                         val jsonObject = org.json.JSONObject(decodedJson)
                         val character = Character(
                             name = jsonObject.getString("name"),

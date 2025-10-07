@@ -365,12 +365,17 @@ fun AppNavGraph(
                         }
                     },
                     onNavigate = { sentence, character ->
-                        val characterJson = "{\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
+                        val characterJson = "{\"id\":\"${character.id}\",\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
+                        Log.d("NavGraph", "characterJson: $characterJson")
                         val encodedCharacterJson = java.net.URLEncoder.encode(characterJson, "UTF-8")
-                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence?characterData=$encodedCharacterJson")
+                        
+                        // ✅ ENCODE SENTENCE ĐỂ TRÁNH KHOẢNG TRẮNG PHÁ VỠ URL
+                        val encodedSentence = java.net.URLEncoder.encode(sentence, "UTF-8")
+                        
+                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$encodedSentence?characterData=$encodedCharacterJson")
                     },
                     onNavigateWithConversation = { character, conversationId ->
-                        val characterJson = "{\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
+                        val characterJson = "{\"id\":\"${character.id}\",\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
                         val encodedCharacterJson = java.net.URLEncoder.encode(characterJson, "UTF-8")
                         navController.navigate("${Routes.CHAT_SMART_AI_CHAT_WITH_CONVERSATION}/$conversationId?characterData=$encodedCharacterJson")
                     }
@@ -399,28 +404,41 @@ fun AppNavGraph(
                     ) + fadeOut(animationSpec = tween(300))
                 }
             ) { backStackEntry ->
-                val sentence = backStackEntry.arguments?.getString("sentence") ?: ""
+                val encodedSentence = backStackEntry.arguments?.getString("sentence") ?: ""
+                val sentence = java.net.URLDecoder.decode(encodedSentence, "UTF-8")
                 val characterData = backStackEntry.arguments?.getString("characterData") ?: ""
+                
+                // ✅ THÊM LOG ĐỂ DEBUG DECODE
                 
                 // Parse character from JSON data
                 val selectedCharacter = if (characterData.isNotEmpty()) {
                     try {
                         val decodedJson = java.net.URLDecoder.decode(characterData, "UTF-8")
-                        Log.e("NavGraph", "decodedJson: ${decodedJson}")
+                        Log.d("NavGraph", "decodedJson: $decodedJson")
                         val jsonObject = org.json.JSONObject(decodedJson)
+                        Log.d("NavGraph", "jsonObject parsed successfully")
+                        
                         val character = Character(
+                            id = jsonObject.optString("id", ""),
                             name = jsonObject.getString("name"),
                             personality = jsonObject.getString("personality"),
                             description = jsonObject.getString("description"),
                             voiceId = jsonObject.getString("voice")
                         )
+                        Log.d("NavGraph", "Character created: id='${character.id}', name='${character.name}'")
+                        Log.d("NavGraph", "========================")
                         character
                     } catch (e: Exception) {
                         Log.e("NavGraph", "Error parsing character data: ${e.message}")
+                        Log.e("NavGraph", "Stack trace: ${e.stackTraceToString()}")
                         Log.e("NavGraph", "characterData was: $characterData")
+                        Log.e("NavGraph", "Falling back to default character")
                         Character.DEFAULT_CHARACTERS.firstOrNull()
                     }
-                } else Character.DEFAULT_CHARACTERS.firstOrNull()
+                } else {
+                    Log.d("NavGraph", "characterData is empty, using default character")
+                    Character.DEFAULT_CHARACTERS.firstOrNull()
+                }
                 
                 ChatSmartAiChatScreen(
                     sentence = sentence,
@@ -465,9 +483,10 @@ fun AppNavGraph(
                 // Parse character from JSON data
                 val selectedCharacter = if (characterData.isNotEmpty()) {
                     try {
-                        val json = org.json.JSONObject(characterData)
+                        val decodedJson = java.net.URLDecoder.decode(characterData, "UTF-8")
+                        val json = org.json.JSONObject(decodedJson)
                         val character = Character(
-                            id = "", // Will be loaded from conversation
+                            id = json.optString("id", ""), // Parse id from JSON
                             name = json.optString("name", "Lingoo"),
                             personality = json.optString("personality", ""),
                             description = json.optString("description", ""),

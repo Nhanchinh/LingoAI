@@ -24,7 +24,7 @@ import com.example.myapplication.ui.theme.TextPrimary
 @Composable
 fun VideoStudyScreen(
     onBack: () -> Unit,
-    onVideoClick: (String, String, String, String?) -> Unit = { _, _, _, _ -> }
+    onVideoClick: (String, String, String, String?, String, String) -> Unit = { _, _, _, _, _, _ -> }
 ) {
     Box(
         modifier = Modifier

@@ -89,7 +89,7 @@ fun ProfileScreen(
                 Text(
                     "Thông tin cá nhân",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
+                    fontSize = 20.sp,
                     modifier = Modifier.weight(1f),
                     textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )

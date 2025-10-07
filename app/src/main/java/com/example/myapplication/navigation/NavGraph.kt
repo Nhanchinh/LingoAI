@@ -604,20 +604,26 @@ fun AppNavGraph(
             ) {
                 VideoStudyScreen(
                     onBack = { navController.popBackStack() },
-                    onVideoClick = { videoId, title, description, subtitleFileName ->
+                    onVideoClick = { videoId, title, description, subtitleFileName, duration, level ->
                         val subtitleParam = subtitleFileName ?: "none"
-                        navController.navigate("${Routes.VIDEO_PLAYER}/$videoId/$title/$description/$subtitleParam")
+                        val encodedTitle = title.replace("/", "_").replace(" ", "_")
+                        val encodedDescription = description.replace("/", "_").replace(" ", "_")
+                        val encodedDuration = duration.replace("/", "_").replace(" ", "_")
+                        val encodedLevel = level.replace("/", "_").replace(" ", "_")
+                        navController.navigate("${Routes.VIDEO_PLAYER}/$videoId/$encodedTitle/$encodedDescription/$encodedDuration/$encodedLevel/$subtitleParam")
                     }
                 )
             }
 
             // Video Player Screen
             composable(
-                route = "${Routes.VIDEO_PLAYER}/{videoId}/{title}/{description}/{subtitleFile}",
+                route = "${Routes.VIDEO_PLAYER}/{videoId}/{title}/{description}/{duration}/{level}/{subtitleFile}",
                 arguments = listOf(
                     navArgument("videoId") { type = NavType.StringType },
                     navArgument("title") { type = NavType.StringType },
                     navArgument("description") { type = NavType.StringType },
+                    navArgument("duration") { type = NavType.StringType },
+                    navArgument("level") { type = NavType.StringType },
                     navArgument("subtitleFile") { type = NavType.StringType }
                 ),
                 enterTransition = {
@@ -634,8 +640,10 @@ fun AppNavGraph(
                 }
             ) { backStackEntry ->
                 val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
-                val title = backStackEntry.arguments?.getString("title") ?: "Video"
-                val description = backStackEntry.arguments?.getString("description") ?: ""
+                val title = backStackEntry.arguments?.getString("title")?.replace("_", " ") ?: "Video"
+                val description = backStackEntry.arguments?.getString("description")?.replace("_", " ") ?: ""
+                val duration = backStackEntry.arguments?.getString("duration")?.replace("_", " ") ?: "~10 phút"
+                val level = backStackEntry.arguments?.getString("level")?.replace("_", " ") ?: "Beginner"
                 val subtitleFile = backStackEntry.arguments?.getString("subtitleFile")
                 val subtitleFileName = if (subtitleFile == "none") null else subtitleFile
                 
@@ -643,6 +651,8 @@ fun AppNavGraph(
                     videoId = videoId,
                     title = title,
                     description = description,
+                    duration = duration,
+                    level = level,
                     subtitleFileName = subtitleFileName,
                     onBack = { navController.popBackStack() }
                 )

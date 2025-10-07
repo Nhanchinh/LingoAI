@@ -31,6 +31,8 @@ fun VideoPlayerScreen(
     videoId: String,
     title: String = "Video học từ vựng",
     description: String = "Học từ vựng qua video với phát âm chuẩn",
+    duration: String = "~10 phút",
+    level: String = "Beginner",
     subtitleFileName: String? = null,
     onBack: () -> Unit
 ) {
@@ -172,12 +174,13 @@ fun VideoPlayerScreen(
                         }
                     }
                     
-                    // Hiển thị trạng thái thu âm với chiều cao cố định
+                    // Hiển thị trạng thái thu âm với chiều cao linh hoạt
                     Spacer(modifier = Modifier.height(8.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(32.dp) // Chiều cao cố định cho status text
+                            .heightIn(min = 32.dp, max = 80.dp) // Cho phép mở rộng khi cần
+                            .padding(horizontal = 16.dp) // Thêm padding để text không sát mép
                     ) {
                         if (isRecording) {
                             Text(
@@ -185,7 +188,10 @@ fun VideoPlayerScreen(
                                 fontSize = 14.sp,
                                 color = TextPrimary.copy(alpha = 0.7f),
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 3, // Cho phép tối đa 3 dòng
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                lineHeight = 18.sp // Tăng line height để dễ đọc hơn
                             )
                         } else if (recordingError != null) {
                             Text(
@@ -193,7 +199,10 @@ fun VideoPlayerScreen(
                                 fontSize = 14.sp,
                                 color = Color.Red,
                                 textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 2,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                                lineHeight = 18.sp
                             )
                         }
                     }
@@ -245,13 +254,13 @@ fun VideoPlayerScreen(
                         VideoStatItem(
                             icon = "⏱️",
                             label = "Thời lượng",
-                            value = "~10 phút"
+                            value = duration
                         )
                         
                         VideoStatItem(
                             icon = "📚",
                             label = "Cấp độ",
-                            value = "Beginner"
+                            value = level
                         )
                     }
                 }

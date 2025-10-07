@@ -25,8 +25,12 @@ fun MultipleChoiceStudyScreen(
 ) {
     val context = LocalContext.current
     val viewModel: FlashcardViewModel = remember { FlashcardViewModel(context) }
+    val soundManager = rememberSoundManager()
 
     val currentSet by viewModel.currentSet.collectAsState()
+    
+    // Cleanup SoundManager khi component unmount
+    SoundManagerEffect(soundManager)
 
     LaunchedEffect(setId) {
         viewModel.setCurrentSet(setId)
@@ -126,7 +130,12 @@ fun MultipleChoiceStudyScreen(
                                         selected = i
                                         correct = answerIndex
                                         if (i == answerIndex) {
+                                            // Phát âm thanh đúng
+                                            soundManager.playCorrectSound()
                                             viewModel.updateFlashcardLearnedStatus(setId, question.id, true)
+                                        } else {
+                                            // Phát âm thanh sai
+                                            soundManager.playWrongSound()
                                         }
                                     }
                                 },

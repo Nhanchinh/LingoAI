@@ -35,8 +35,12 @@ fun MatchingStudyScreen(
 ) {
     val context = LocalContext.current
     val viewModel: FlashcardViewModel = remember { FlashcardViewModel(context) }
+    val soundManager = rememberSoundManager()
 
     val currentSet by viewModel.currentSet.collectAsState()
+    
+    // Cleanup SoundManager khi component unmount
+    SoundManagerEffect(soundManager)
 
     LaunchedEffect(setId) {
         viewModel.setCurrentSet(setId)
@@ -197,12 +201,16 @@ fun MatchingStudyScreen(
                                     } else {
                                         val first = cells[selectedIndex!!]
                                         if (isPairMatch(first, cell)) {
+                                            // Phát âm thanh đúng
+                                            soundManager.playCorrectSound()
                                             matchedIds = matchedIds + first.id + cell.id
                                             // Mark the underlying flashcard as learned
                                             val learnedId = baseFlashcardId(first.id)
                                             viewModel.updateFlashcardLearnedStatus(setId, learnedId, true)
                                             selectedIndex = null
                                         } else {
+                                            // Phát âm thanh sai
+                                            soundManager.playWrongSound()
                                             selectedIndex = null
                                         }
                                     }

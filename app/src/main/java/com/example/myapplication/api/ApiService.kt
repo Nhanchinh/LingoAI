@@ -30,6 +30,9 @@ object ApiService {
     // URL ban đầu - sẽ được cập nhật bởi fetchAndSetBaseUrl
     private var BASE_URL = "https://vienvipvail-default-rtdb.firebaseio.com"
     private var USER_ID = "abcb" // Giá trị mặc định, sẽ được cập nhật khi đăng nhập
+    
+    // Function để lấy USER_ID hiện tại
+    fun getUserId(): String = USER_ID
 
     // Hàm này gọi GET API để lấy base URL mới rồi cập nhật BASE_URL
     fun fetchAndSetBaseUrl(onComplete: ((success: Boolean) -> Unit)? = null) {
@@ -816,6 +819,35 @@ object ApiService {
             })
         } catch (e: Exception) {
             Log.e("ApiService", "Exception in getUserConversations: ${e.message}")
+            callback(-1, e.message)
+        }
+    }
+
+    // GET /conversations/character/<character_id> - Lấy danh sách hội thoại của nhân vật
+    fun getCharacterConversations(characterId: String, callback: (Int, String?) -> Unit) {
+        try {
+            val request = Request.Builder()
+                .url("$BASE_URL/conversations/character/$characterId")
+                .get()
+                .build()
+
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    Log.e("ApiService", "getCharacterConversations failed: ${e.message}")
+                    callback(-1, e.message)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    try {
+                        callback(response.code, response.body?.string())
+                    } catch (e: Exception) {
+                        Log.e("ApiService", "Error processing response: ${e.message}")
+                        callback(-1, e.message)
+                    }
+                }
+            })
+        } catch (e: Exception) {
+            Log.e("ApiService", "Exception in getCharacterConversations: ${e.message}")
             callback(-1, e.message)
         }
     }

@@ -71,6 +71,9 @@ fun ChatSmartAiWelcomeScreen(
     onNavigateWithConversation: (Character, String) -> Unit = { _, _ -> }, // New callback for conversation navigation
     onCharacterSelected: ((Character) -> Unit)? = null // New callback for direct character selection
 ) {
+    // Tự động lấy userId từ ApiService
+    val userId = ApiService.getUserId()
+    val isGuestUser = userId.startsWith("guest_")
     val context = LocalContext.current
     var isRecording by remember { mutableStateOf(false) }
     var isProcessingAudio by remember { mutableStateOf(false) }
@@ -220,7 +223,7 @@ fun ChatSmartAiWelcomeScreen(
                             modifier = Modifier.fillMaxSize()
                         ) {
                             Icon(
-                                Icons.Default.Person, 
+                                Icons.Default.Edit, 
                                 contentDescription = "Manage Characters",
                                 modifier = Modifier.size(28.dp),
                                 tint = ButtonPrimary
@@ -301,7 +304,16 @@ fun ChatSmartAiWelcomeScreen(
                         onCharacterSelected?.invoke(character)
                     },
                     onCreateNew = {
-                        showCreateCharacterDialog = true
+                        if (isGuestUser) {
+                            // Show message for guest users
+                            Toast.makeText(
+                                context,
+                                "Tính năng này chỉ dành cho người dùng có tài khoản. Vui lòng đăng nhập!",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        } else {
+                            showCreateCharacterDialog = true
+                        }
                     }
                 )
             }
@@ -346,7 +358,6 @@ fun ChatSmartAiWelcomeScreen(
                                         CoroutineScope(Dispatchers.Main).launch {
                                             isProcessingAudio = false
                                             val character = selectedCharacter ?: Character.DEFAULT_CHARACTERS[0]
-                                            Log.d("Debug", "Final character: ${character.name}")
                                             onNavigate(transcription, character)
                                         }
                                     }
@@ -484,7 +495,7 @@ fun CharacterSelectionRow(
             )
         }
         
-        // Add new character button
+        // Add new character button - always show, but check permission on click
         item {
             Card(
                 modifier = Modifier
@@ -1275,17 +1286,13 @@ fun ConversationsListDialog(
     LaunchedEffect(character.id) {
         isLoading = true
         errorMessage = null
-        ApiService.getUserConversations { statusCode, response ->
+        ApiService.getCharacterConversations(character.id) { statusCode, response ->
             isLoading = false
             if (statusCode == 200 && response != null) {
                 try {
                     val jsonResponse = JSONObject(response)
                     val conversationsArray = jsonResponse.getJSONArray("data")
-                    val allConversations = Conversation.fromApiResponseList(conversationsArray)
-                    
-                    // Filter conversations for this character
-                    conversations = allConversations.filter { it.characterId == character.id }
-                    
+                    conversations = Conversation.fromApiResponseList(conversationsArray)
                     Log.d("ConversationsDialog", "Loaded ${conversations.size} conversations for ${character.name}")
                 } catch (e: Exception) {
                     Log.e("ConversationsDialog", "Error parsing conversations: ${e.message}")
@@ -1475,17 +1482,6 @@ fun ConversationItem(
                     maxLines = 1
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                
-                // Show last message preview if available
-                if (conversation.messages.isNotEmpty()) {
-                    val lastMessage = conversation.messages.last()
-                    Text(
-                        text = "${if (lastMessage.isUser) "Bạn" else "AI"}: ${lastMessage.content}",
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        maxLines = 1
-                    )
-                }
                 
                 // Show message count
                 Text(

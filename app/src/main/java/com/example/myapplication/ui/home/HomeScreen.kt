@@ -97,7 +97,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
             HomeButton("Visionary Words", onClick = onVisionaryWordsClick)
             Spacer(modifier = Modifier.height(16.dp))
-            HomeButton("Flashcard", onClick = onFlashcardClick)
+            HomeButton("Learning", onClick = onFlashcardClick)
             Spacer(modifier = Modifier.height(16.dp))
             HomeButton("History", onClick = onHistoryClick)
         }

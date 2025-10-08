@@ -12,6 +12,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +28,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.UserPreferences
+import com.example.myapplication.ui.streak.UltraSimpleStreak
+import com.example.myapplication.ui.streak.UltraSimpleStreakCard
+import com.example.myapplication.ui.streak.UltraSimpleStreakInfo
 import kotlinx.coroutines.launch
 import androidx.compose.ui.tooling.preview.Preview
 
@@ -31,11 +38,24 @@ import androidx.compose.ui.tooling.preview.Preview
 @Composable
 fun ProfileScreen(
     onBack: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNotificationSettings: () -> Unit = {},
+    onAISettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userPreferences = remember { UserPreferences(context) }
     val coroutineScope = rememberCoroutineScope()
+
+    // Ultra Simple Streak setup
+    var streakInfo by remember { mutableStateOf(UltraSimpleStreakInfo()) }
+    
+    // Auto-refresh streak info every 5 seconds
+    LaunchedEffect(Unit) {
+        while (true) {
+            streakInfo = UltraSimpleStreak.getStreakInfo()
+            kotlinx.coroutines.delay(5000) // 5 seconds
+        }
+    }
 
     // Lấy thông tin người dùng từ DataStore
     val username = userPreferences.username.collectAsState(initial = "").value ?: "User"
@@ -51,7 +71,7 @@ fun ProfileScreen(
                 .fillMaxSize()
                // .padding(16.dp)
         ) {
-            // Header với nút Back
+            // Header với nút Back và Settings
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -69,9 +89,99 @@ fun ProfileScreen(
                 Text(
                     "Thông tin cá nhân",
                     fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    modifier = Modifier.padding(start = 4.dp)
+                    fontSize = 20.sp,
+                    modifier = Modifier.weight(1f),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+
+                // Settings dropdown menu
+                var showSettingsMenu by remember { mutableStateOf(false) }
+                
+                Box {
+                    IconButton(
+                        onClick = { showSettingsMenu = true }
+                    ) {
+                        Icon(
+                            Icons.Default.Settings,
+                            contentDescription = "Settings",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    
+                    DropdownMenu(
+                        expanded = showSettingsMenu,
+                        onDismissRequest = { showSettingsMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Psychology,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Cài đặt AI")
+                                }
+                            },
+                            onClick = {
+                                showSettingsMenu = false
+                                onAISettings()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Notifications,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Cài đặt thông báo")
+                                }
+                            },
+                            onClick = {
+                                showSettingsMenu = false
+                                onNotificationSettings()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { 
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.ExitToApp,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Text("Đăng xuất")
+                                }
+                            },
+                            onClick = {
+                                showSettingsMenu = false
+                                coroutineScope.launch {
+                                    // Xóa dữ liệu người dùng
+                                    userPreferences.clearUserData()
+
+                                    // Thông báo đăng xuất thành công
+                                    Handler(Looper.getMainLooper()).post {
+                                        Toast.makeText(context, "Đăng xuất thành công", Toast.LENGTH_SHORT).show()
+                                    }
+
+                                    // Gọi callback đăng xuất
+                                    onLogout()
+                                }
+                            }
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -118,92 +228,13 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- AI Settings ---
-            val voices = listOf(
-                "af_heart", "af_bella", "af_sarah", "af_sky",
-                "am_michael", "am_onyx", "am_fenrir"
+            // Ultra Simple Streak Card
+            UltraSimpleStreakCard(
+                streakInfo = streakInfo
             )
 
-            val currentVoice = userPreferences.aiVoice.collectAsState(initial = "af_heart").value ?: "af_heart"
-
-            var expandedVoice by remember { mutableStateOf(false) }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-            ) {
-                Text("Cài đặt AI", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Voice selector
-                ExposedDropdownMenuBox(
-                    expanded = expandedVoice,
-                    onExpandedChange = { expandedVoice = !expandedVoice }
-                ) {
-                    OutlinedTextField(
-                        value = currentVoice,
-                        onValueChange = {},
-                        readOnly = true,
-                        label = { Text("Giọng AI") },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
-                    )
-                    ExposedDropdownMenu(
-                        expanded = expandedVoice,
-                        onDismissRequest = { expandedVoice = false }
-                    ) {
-                        voices.forEach { v ->
-                            DropdownMenuItem(
-                                text = { Text(v) },
-                                onClick = {
-                                    expandedVoice = false
-                                    coroutineScope.launch { userPreferences.saveAiVoice(v) }
-                                }
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-
             Spacer(modifier = Modifier.weight(1f))
-
-            // Nút đăng xuất
-            Button(
-                onClick = {
-                    coroutineScope.launch {
-                        // Xóa dữ liệu người dùng
-                        userPreferences.clearUserData()
-
-                        // Thông báo đăng xuất thành công
-                        Handler(Looper.getMainLooper()).post {
-                            Toast.makeText(context, "Đăng xuất thành công", Toast.LENGTH_SHORT).show()
-                        }
-
-                        // Gọi callback đăng xuất
-                        onLogout()
-                    }
-                },
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFE57373),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(24.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
-                    .padding(horizontal = 32.dp)
-            ) {
-                Text(
-                    "Đăng xuất",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-
+            
             Spacer(modifier = Modifier.height(32.dp))
         }
     }

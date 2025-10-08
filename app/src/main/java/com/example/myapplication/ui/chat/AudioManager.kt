@@ -19,10 +19,12 @@ object AudioManager {
     private var currentTempFile: File? = null
     private var currentScreenId: String? = null
 
+    // Enhanced function with voice parameter
     fun playAudioFromText(
         context: Context,
         text: String,
         screenId: String,
+        voice: String? = null,
         onStateChange: ((Boolean) -> Unit)? = null
     ) {
         if (text.isBlank()) {
@@ -35,23 +37,40 @@ object AudioManager {
 
         onStateChange?.invoke(true)
 
-        // Read preferred voice from DataStore (default to af_heart)
-        val userPrefs = UserPreferences(context)
-        var preferredVoice = "af_heart"
-        try {
-            // Blocking fetch on IO thread
-            val scope = CoroutineScope(Dispatchers.IO)
-            scope.launch {
-                preferredVoice = userPrefs.aiVoice.first() ?: "af_heart"
+        if (voice != null) {
+            // Use provided voice directly
+            ApiService.textToSpeech(text, voice = voice) { code, byteArray, error ->
+                handleTtsResponse(context, text, screenId, code, byteArray, error, onStateChange)
+            }
+        } else {
+            // Read preferred voice from DataStore (default to af_heart)
+            val userPrefs = UserPreferences(context)
+            var preferredVoice = "af_heart"
+            try {
+                // Blocking fetch on IO thread
+                val scope = CoroutineScope(Dispatchers.IO)
+                scope.launch {
+                    preferredVoice = userPrefs.aiVoice.first() ?: "af_heart"
+                    ApiService.textToSpeech(text, voice = preferredVoice) { code, byteArray, error ->
+                        handleTtsResponse(context, text, screenId, code, byteArray, error, onStateChange)
+                    }
+                }
+            } catch (e: Exception) {
                 ApiService.textToSpeech(text, voice = preferredVoice) { code, byteArray, error ->
                     handleTtsResponse(context, text, screenId, code, byteArray, error, onStateChange)
                 }
             }
-        } catch (e: Exception) {
-            ApiService.textToSpeech(text, voice = preferredVoice) { code, byteArray, error ->
-                handleTtsResponse(context, text, screenId, code, byteArray, error, onStateChange)
-            }
         }
+    }
+
+    // Backward compatibility - original function without voice parameter
+    fun playAudioFromText(
+        context: Context,
+        text: String,
+        screenId: String,
+        onStateChange: ((Boolean) -> Unit)? = null
+    ) {
+        playAudioFromText(context, text, screenId, null, onStateChange)
     }
 
     private fun handleTtsResponse(

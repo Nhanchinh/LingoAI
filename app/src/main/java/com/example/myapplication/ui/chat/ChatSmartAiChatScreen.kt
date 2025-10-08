@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.myapplication.R
 import com.example.myapplication.api.ApiService
+import com.example.myapplication.models.Character
+import com.example.myapplication.models.VoiceOption
 import com.example.myapplication.ui.chat.AudioManager
 import com.example.myapplication.ui.common.AudioScreenWrapper
 import com.example.myapplication.ui.theme.ButtonPrimary
@@ -44,6 +46,8 @@ import org.json.JSONObject
 @Composable
 fun ChatSmartAiChatScreen(
     sentence: String,
+    selectedCharacter: Character? = null,
+    existingConversationId: String? = null, // New parameter for loading existing conversation
     onBack: () -> Unit = {},
     onRecordStart: () -> Unit = {},
     onRecordStop: (((String) -> Unit) -> Unit) = {},
@@ -51,6 +55,15 @@ fun ChatSmartAiChatScreen(
 ) {
     // Tạo screenId cho audio management
     val screenId = remember { "chat_smart_ai_${System.currentTimeMillis()}" }
+    
+    // Character management - use selected character or default
+    var currentCharacter by remember { 
+        mutableStateOf(selectedCharacter ?: Character.DEFAULT_CHARACTERS[0]) // Default to Heart
+    }
+    
+    // Conversation management - initialize with existingConversationId if provided
+    var conversationId by remember { mutableStateOf(existingConversationId) }
+    var isLoadingHistory by remember { mutableStateOf(existingConversationId != null) }
 
     // ✅ BỎ AudioScreenWrapper, tự quản lý DisposableEffect
     DisposableEffect(screenId) {
@@ -61,7 +74,69 @@ fun ChatSmartAiChatScreen(
 
     val coroutineScope = rememberCoroutineScope()
     var messages by remember {
-        mutableStateOf(listOf(ChatMessage("User", sentence, true)))
+        mutableStateOf(
+            if (existingConversationId == null) {
+                listOf(ChatMessage("User", sentence, true))
+            } else {
+                emptyList() // Will be loaded from conversation history
+            }
+        )
+    }
+    
+    // Load conversation history if existingConversationId is provided
+    LaunchedEffect(existingConversationId) {
+        Log.d("ChatSmartAI", "LaunchedEffect triggered with existingConversationId: $existingConversationId")
+        if (existingConversationId != null) {
+            Log.d("ChatSmartAI", "Starting to load conversation history for ID: $existingConversationId")
+            isLoadingHistory = true
+            ApiService.getConversationHistory(existingConversationId) { statusCode, response ->
+                Log.d("ChatSmartAI", "API Response - Status: $statusCode")
+                Log.d("ChatSmartAI", "API Response - Body: $response")
+                isLoadingHistory = false
+                if (statusCode == 200 && response != null) {
+                    try {
+                        val jsonResponse = JSONObject(response)
+                        Log.d("ChatSmartAI", "Parsed JSON Response: $jsonResponse")
+                        
+                        val conversationData = jsonResponse.getJSONObject("data")
+                        Log.d("ChatSmartAI", "Conversation data: $conversationData")
+                        
+                        val messagesArray = conversationData.getJSONArray("messages")
+                        Log.d("ChatSmartAI", "Messages array length: ${messagesArray.length()}")
+                        Log.d("ChatSmartAI", "Messages array: $messagesArray")
+                        
+                        val loadedMessages = mutableListOf<ChatMessage>()
+                        for (i in 0 until messagesArray.length()) {
+                            val msgJson = messagesArray.getJSONObject(i)
+                            Log.d("ChatSmartAI", "Processing message $i: $msgJson")
+                            val role = msgJson.getString("role")
+                            val content = msgJson.getString("content")
+                            Log.d("ChatSmartAI", "Message $i - Role: $role, Content: $content")
+                            loadedMessages.add(
+                                ChatMessage(
+                                    sender = if (role == "user") "User" else "AI",
+                                    text = content,
+                                    isUser = role == "user"
+                                )
+                            )
+                        }
+                        
+                        messages = loadedMessages
+                        Log.d("ChatSmartAI", "Successfully loaded ${loadedMessages.size} messages from conversation history")
+                        Log.d("ChatSmartAI", "Messages list: $messages")
+                    } catch (e: Exception) {
+                        Log.e("ChatSmartAI", "Error loading conversation history", e)
+                        Log.e("ChatSmartAI", "Error message: ${e.message}")
+                        Log.e("ChatSmartAI", "Stack trace: ${e.stackTraceToString()}")
+                    }
+                } else {
+                    Log.e("ChatSmartAI", "Failed to load conversation history - Status: $statusCode")
+                    Log.e("ChatSmartAI", "Response body: $response")
+                }
+            }
+        } else {
+            Log.d("ChatSmartAI", "No existing conversation ID, skipping history load")
+        }
     }
 
     // Thêm state để theo dõi trạng thái đang chờ phản hồi
@@ -125,7 +200,13 @@ fun ChatSmartAiChatScreen(
             // Hiển thị animation chờ
             isWaitingForResponse = true
 
-            ApiService.generateText(lastMessage.text) { code, response ->
+            // Use enhanced generateText with character and conversation context
+            ApiService.generateText(
+                query = lastMessage.text,
+                characterId = currentCharacter.id.ifEmpty { null },
+                conversationId = conversationId,
+                userId = null // Will use default USER_ID from ApiService
+            ) { code, response ->
                 // Khi có phản hồi, ẩn animation chờ
                 isWaitingForResponse = false
 
@@ -133,11 +214,19 @@ fun ChatSmartAiChatScreen(
                     try {
                         val json = JSONObject(response)
                         val textResponse = json.optString("response", "")
+                        
+                        // Update conversation ID if returned from API
+                        val returnedConversationId = json.optString("conversation_id", "")
+                        if (returnedConversationId.isNotEmpty() && conversationId == null) {
+                            conversationId = returnedConversationId
+                            Log.d("ChatSmartAI", "Set conversation ID: $conversationId")
+                        }
+                        
                         if (textResponse.isNotEmpty()) {
-                            val aiMessage = ChatMessage("Lingoo", textResponse, false)
+                            val aiMessage = ChatMessage(currentCharacter.name, textResponse, false)
                             coroutineScope.launch {
                                 messages = messages + aiMessage
-                                Log.d("ChatSmartAI", "Added AI response: $textResponse")
+                                Log.d("ChatSmartAI", "Added AI response from ${currentCharacter.name}: $textResponse")
                             }
                         }
                     } catch (e: Exception) {
@@ -181,12 +270,20 @@ fun ChatSmartAiChatScreen(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "ChatSmart AI",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    fontFamily = FontFamily.Serif
-                )
+                Column {
+                    Text(
+                        "ChatSmart AI",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 28.sp,
+                        fontFamily = FontFamily.Serif
+                    )
+                    Text(
+                        "Chatting with ${currentCharacter.name}",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        fontFamily = FontFamily.Default
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -207,7 +304,8 @@ fun ChatSmartAiChatScreen(
                 items(messages) { msg ->
                     ChatBubbleWithAnimation(
                         message = msg, 
-                        screenId = screenId,  // ← Truyền screenId
+                        character = currentCharacter,
+                        screenId = screenId,
                         onPlayAudio = onPlayAudio
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -216,7 +314,7 @@ fun ChatSmartAiChatScreen(
                 // Hiển thị loading animation khi đang chờ phản hồi
                 if (isWaitingForResponse) {
                     item {
-                        TypingIndicator()
+                        TypingIndicator(characterName = currentCharacter.name)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
@@ -314,7 +412,8 @@ fun ChatSmartAiChatScreen(
 @Composable
 fun ChatBubbleWithAnimation(
     message: ChatMessage,
-    screenId: String,  // ← Thêm parameter này
+    character: Character,
+    screenId: String,
     onPlayAudio: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -365,11 +464,12 @@ fun ChatBubbleWithAnimation(
                             AudioManager.stopCurrentAudio()
                             isLoading = true
 
-                            // ✅ ĐẢM BẢO DÙNG ĐÚNG screenId
+                            // ✅ Sử dụng voice của character cho AI responses
                             AudioManager.playAudioFromText(
                                 context = context,
                                 text = message.text,
-                                screenId = screenId,  // ← Quan trọng!
+                                screenId = screenId,
+                                voice = character.voiceId, // Use character voice for AI responses
                                 onStateChange = { isPlaying ->
                                     if (isPlaying) {
                                         kotlinx.coroutines.GlobalScope.launch {
@@ -406,11 +506,12 @@ fun ChatBubbleWithAnimation(
                             AudioManager.stopCurrentAudio()
                             isLoading = true
 
-                            // ✅ ĐẢM BẢO DÙNG ĐÚNG screenId
+                            // ✅ Sử dụng voice mặc định cho user messages (hoặc user voice preference)
                             AudioManager.playAudioFromText(
                                 context = context,
                                 text = message.text,
-                                screenId = screenId,  // ← Quan trọng!
+                                screenId = screenId,
+                                voice = null, // Use default/user preference voice for user messages
                                 onStateChange = { isPlaying ->
                                     if (isPlaying) {
                                         kotlinx.coroutines.GlobalScope.launch {
@@ -459,7 +560,7 @@ fun ChatBubbleWithAnimation(
 }
 
 @Composable
-fun TypingIndicator() {
+fun TypingIndicator(characterName: String = "Lingoo") {
     Row(
         horizontalArrangement = Arrangement.Start,
         modifier = Modifier.fillMaxWidth()
@@ -469,7 +570,7 @@ fun TypingIndicator() {
             modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                "Lingoo",
+                characterName,
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp
             )

@@ -32,7 +32,9 @@ import com.example.myapplication.ui.theme.TextPrimary
 fun FlashcardDetailScreen(
     setId: String,
     onBack: () -> Unit,
-    onStartStudy: (String) -> Unit
+    onStartStudy: (String) -> Unit,
+    onStartMatching: (String) -> Unit,
+    onStartMultipleChoice: (String) -> Unit
 ) {
     val context = LocalContext.current
     val viewModel: FlashcardViewModel = remember { FlashcardViewModel(context) }
@@ -41,6 +43,7 @@ fun FlashcardDetailScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showImportDialog by remember { mutableStateOf(false) }
     val importProgress by viewModel.importProgress.collectAsState()
+    var showStudyModeDialog by remember { mutableStateOf(false) }
 
     // Snackbar Host State
     val snackbarHostState = remember { SnackbarHostState() }
@@ -211,7 +214,7 @@ fun FlashcardDetailScreen(
                 // FLOATING ACTION BUTTON
                 if (set.flashcards.isNotEmpty()) {
                     FloatingActionButton(
-                        onClick = { onStartStudy(setId) },
+                        onClick = { showStudyModeDialog = true },
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(16.dp),
@@ -252,6 +255,54 @@ fun FlashcardDetailScreen(
                 )
             }
         }
+    }
+
+    // STUDY MODE DIALOG
+    if (showStudyModeDialog) {
+        AlertDialog(
+            onDismissRequest = { showStudyModeDialog = false },
+            title = { Text("Chọn cách học") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Button(
+                        onClick = {
+                            showStudyModeDialog = false
+                            onStartStudy(setId)
+                        },
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.Style, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Flashcard")
+                    }
+                    Button(
+                        onClick = {
+                            showStudyModeDialog = false
+                            onStartMatching(setId)
+                        },
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.ViewColumn, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Ghép cặp (trắc nghiệm)")
+                    }
+                    Button(
+                        onClick = {
+                            showStudyModeDialog = false
+                            onStartMultipleChoice(setId)
+                        },
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Trắc nghiệm 4 đáp án")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showStudyModeDialog = false }) { Text("Đóng") }
+            }
+        )
     }
 }
 

@@ -36,9 +36,16 @@ import com.example.myapplication.ui.wordgenie.WordDetailScreen
 import com.example.myapplication.ui.wordgenie.WordGenieScreen
 import com.example.myapplication.ui.auth.ProfileScreen
 import com.example.myapplication.ui.chat.ChatSmartAiChatScreen
+import com.example.myapplication.models.Character
 import com.example.myapplication.ui.flashcard.FlashcardDetailScreen
 import com.example.myapplication.ui.flashcard.FlashcardScreen
 import com.example.myapplication.ui.flashcard.FlashcardStudyScreen
+import com.example.myapplication.ui.flashcard.MatchingStudyScreen
+import com.example.myapplication.ui.flashcard.MultipleChoiceStudyScreen
+import com.example.myapplication.ui.flashcard.VideoStudyScreen
+import com.example.myapplication.ui.flashcard.VideoPlayerScreen
+import com.example.myapplication.ui.notification.NotificationSettingsScreen
+import com.example.myapplication.ui.ai.AISettingsScreen
 
 object Routes {
     // Auth routes
@@ -49,6 +56,8 @@ object Routes {
     // Main features
     const val HOME = "home"
     const val PROFILE = "profile"  // Thêm route này
+    const val NOTIFICATION_SETTINGS = "notification_settings"
+    const val AI_SETTINGS = "ai_settings"
     // Feature routes
     const val WORD_GENIE = "word_genie"
     const val CHAT_SMART_AI = "chat_smart_ai"
@@ -63,9 +72,14 @@ object Routes {
     const val VOCAB_INFO = "vocab_info"
     const val CHAT_SMART_AI_WELCOME = "chat_smart_ai_welcome"
     const val CHAT_SMART_AI_CHAT = "chat_smart_ai_chat"
+    const val CHAT_SMART_AI_CHAT_WITH_CONVERSATION = "chat_smart_ai_chat_with_conversation"
 
     const val FLASHCARD_DETAIL = "flashcard_detail" // THÊM DÒNG NÀY
     const val FLASHCARD_STUDY = "flashcard_study"   // THÊM DÒNG NÀY
+    const val VIDEO_STUDY = "video_study"
+    const val VIDEO_PLAYER = "video_player"
+    const val MATCHING_STUDY = "matching_study"
+    const val MULTIPLE_CHOICE_STUDY = "multiple_choice_study"
 
 
 }
@@ -217,11 +231,57 @@ fun AppNavGraph(
                         navController.navigate(Routes.LOGIN) {
                             popUpTo(navController.graph.id) { inclusive = true }
                         }
+                    },
+                    onNotificationSettings = {
+                        navController.navigate(Routes.NOTIFICATION_SETTINGS)
+                    },
+                    onAISettings = {
+                        navController.navigate(Routes.AI_SETTINGS)
                     }
                 )
             }
 
+            // Notification Settings Screen
+            composable(
+                route = Routes.NOTIFICATION_SETTINGS,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                NotificationSettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
 
+            // AI Settings Screen
+            composable(
+                route = Routes.AI_SETTINGS,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                AISettingsScreen(
+                    onBack = { navController.popBackStack() }
+                )
+            }
 
             composable(
                 route = Routes.WORD_GENIE,
@@ -304,16 +364,32 @@ fun AppNavGraph(
                             transcription?.let { callback(it) }
                         }
                     },
-                    onNavigate = { sentence ->
-                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$sentence")
+                    onNavigate = { sentence, character ->
+                        val characterJson = "{\"id\":\"${character.id}\",\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
+                        Log.d("NavGraph", "characterJson: $characterJson")
+                        val encodedCharacterJson = java.net.URLEncoder.encode(characterJson, "UTF-8")
+                        
+                        // ✅ ENCODE SENTENCE ĐỂ TRÁNH KHOẢNG TRẮNG PHÁ VỠ URL
+                        val encodedSentence = java.net.URLEncoder.encode(sentence, "UTF-8")
+                        
+                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT}/$encodedSentence?characterData=$encodedCharacterJson")
+                    },
+                    onNavigateWithConversation = { character, conversationId ->
+                        val characterJson = "{\"id\":\"${character.id}\",\"name\":\"${character.name}\",\"personality\":\"${character.personality}\",\"description\":\"${character.description}\",\"voice\":\"${character.voiceId}\"}"
+                        val encodedCharacterJson = java.net.URLEncoder.encode(characterJson, "UTF-8")
+                        navController.navigate("${Routes.CHAT_SMART_AI_CHAT_WITH_CONVERSATION}/$conversationId?characterData=$encodedCharacterJson")
                     }
                 )
             }
 
             composable(
-                route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}",
+                route = "${Routes.CHAT_SMART_AI_CHAT}/{sentence}?characterData={characterData}",
                 arguments = listOf(
-                    navArgument("sentence") { type = NavType.StringType }
+                    navArgument("sentence") { type = NavType.StringType },
+                    navArgument("characterData") { 
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
                 ),
                 enterTransition = {
                     slideIntoContainer(
@@ -328,9 +404,106 @@ fun AppNavGraph(
                     ) + fadeOut(animationSpec = tween(300))
                 }
             ) { backStackEntry ->
-                val sentence = backStackEntry.arguments?.getString("sentence") ?: ""
+                val encodedSentence = backStackEntry.arguments?.getString("sentence") ?: ""
+                val sentence = java.net.URLDecoder.decode(encodedSentence, "UTF-8")
+                val characterData = backStackEntry.arguments?.getString("characterData") ?: ""
+                
+                // ✅ THÊM LOG ĐỂ DEBUG DECODE
+                
+                // Parse character from JSON data
+                val selectedCharacter = if (characterData.isNotEmpty()) {
+                    try {
+                        val decodedJson = java.net.URLDecoder.decode(characterData, "UTF-8")
+                        Log.d("NavGraph", "decodedJson: $decodedJson")
+                        val jsonObject = org.json.JSONObject(decodedJson)
+                        Log.d("NavGraph", "jsonObject parsed successfully")
+                        
+                        val character = Character(
+                            id = jsonObject.optString("id", ""),
+                            name = jsonObject.getString("name"),
+                            personality = jsonObject.getString("personality"),
+                            description = jsonObject.getString("description"),
+                            voiceId = jsonObject.getString("voice")
+                        )
+                        Log.d("NavGraph", "Character created: id='${character.id}', name='${character.name}'")
+                        Log.d("NavGraph", "========================")
+                        character
+                    } catch (e: Exception) {
+                        Log.e("NavGraph", "Error parsing character data: ${e.message}")
+                        Log.e("NavGraph", "Stack trace: ${e.stackTraceToString()}")
+                        Log.e("NavGraph", "characterData was: $characterData")
+                        Log.e("NavGraph", "Falling back to default character")
+                        Character.DEFAULT_CHARACTERS.firstOrNull()
+                    }
+                } else {
+                    Log.d("NavGraph", "characterData is empty, using default character")
+                    Character.DEFAULT_CHARACTERS.firstOrNull()
+                }
+                
                 ChatSmartAiChatScreen(
                     sentence = sentence,
+                    selectedCharacter = selectedCharacter,
+                    onRecordStart = { recordingManager.startRecording() },
+                    onRecordStop = { callback ->
+                        recordingManager.stopRecording { transcription ->
+                            transcription?.let { callback(it) }
+                        }
+                    },
+                    onBack = { navController.popBackStack() },
+                    onPlayAudio = { text -> recordingManager.playAudioFromText(text) }
+                )
+            }
+
+            // New route for chat with existing conversation
+            composable(
+                route = "${Routes.CHAT_SMART_AI_CHAT_WITH_CONVERSATION}/{conversationId}?characterData={characterData}",
+                arguments = listOf(
+                    navArgument("conversationId") { type = NavType.StringType },
+                    navArgument("characterData") { 
+                        type = NavType.StringType
+                        defaultValue = ""
+                    }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val conversationId = backStackEntry.arguments?.getString("conversationId") ?: ""
+                val characterData = backStackEntry.arguments?.getString("characterData") ?: ""
+                
+                // Parse character from JSON data
+                val selectedCharacter = if (characterData.isNotEmpty()) {
+                    try {
+                        val decodedJson = java.net.URLDecoder.decode(characterData, "UTF-8")
+                        val json = org.json.JSONObject(decodedJson)
+                        val character = Character(
+                            id = json.optString("id", ""), // Parse id from JSON
+                            name = json.optString("name", "Lingoo"),
+                            personality = json.optString("personality", ""),
+                            description = json.optString("description", ""),
+                            voiceId = json.optString("voice", "alloy"),
+                            isActive = true
+                        )
+                        character
+                    } catch (e: Exception) {
+                        Log.e("NavGraph", "Error parsing character data: ${e.message}")
+                        Character.DEFAULT_CHARACTERS.firstOrNull()
+                    }
+                } else Character.DEFAULT_CHARACTERS.firstOrNull()
+                
+                ChatSmartAiChatScreen(
+                    sentence = "", // Empty because we're loading from conversation
+                    selectedCharacter = selectedCharacter,
+                    existingConversationId = conversationId,
                     onRecordStart = { recordingManager.startRecording() },
                     onRecordStop = { callback ->
                         recordingManager.stopRecording { transcription ->
@@ -425,7 +598,82 @@ fun AppNavGraph(
                     },
                     onOpenSet = { setId ->
                         navController.navigate("${Routes.FLASHCARD_DETAIL}/$setId")
+                    },
+                    onNavigateToVideoStudy = {
+                        navController.navigate(Routes.VIDEO_STUDY)
                     }
+                )
+            }
+
+            // Video Study Screen
+            composable(
+                route = Routes.VIDEO_STUDY,
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) {
+                VideoStudyScreen(
+                    onBack = { navController.popBackStack() },
+                    onVideoClick = { videoId, title, description, subtitleFileName, duration, level ->
+                        val subtitleParam = subtitleFileName ?: "none"
+                        val encodedTitle = title.replace("/", "_").replace(" ", "_")
+                        val encodedDescription = description.replace("/", "_").replace(" ", "_")
+                        val encodedDuration = duration.replace("/", "_").replace(" ", "_")
+                        val encodedLevel = level.replace("/", "_").replace(" ", "_")
+                        navController.navigate("${Routes.VIDEO_PLAYER}/$videoId/$encodedTitle/$encodedDescription/$encodedDuration/$encodedLevel/$subtitleParam")
+                    }
+                )
+            }
+
+            // Video Player Screen
+            composable(
+                route = "${Routes.VIDEO_PLAYER}/{videoId}/{title}/{description}/{duration}/{level}/{subtitleFile}",
+                arguments = listOf(
+                    navArgument("videoId") { type = NavType.StringType },
+                    navArgument("title") { type = NavType.StringType },
+                    navArgument("description") { type = NavType.StringType },
+                    navArgument("duration") { type = NavType.StringType },
+                    navArgument("level") { type = NavType.StringType },
+                    navArgument("subtitleFile") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val videoId = backStackEntry.arguments?.getString("videoId") ?: ""
+                val title = backStackEntry.arguments?.getString("title")?.replace("_", " ") ?: "Video"
+                val description = backStackEntry.arguments?.getString("description")?.replace("_", " ") ?: ""
+                val duration = backStackEntry.arguments?.getString("duration")?.replace("_", " ") ?: "~10 phút"
+                val level = backStackEntry.arguments?.getString("level")?.replace("_", " ") ?: "Beginner"
+                val subtitleFile = backStackEntry.arguments?.getString("subtitleFile")
+                val subtitleFileName = if (subtitleFile == "none") null else subtitleFile
+                
+                VideoPlayerScreen(
+                    videoId = videoId,
+                    title = title,
+                    description = description,
+                    duration = duration,
+                    level = level,
+                    subtitleFileName = subtitleFileName,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -453,6 +701,12 @@ fun AppNavGraph(
                     onBack = { navController.popBackStack() },
                     onStartStudy = { studySetId ->
                         navController.navigate("${Routes.FLASHCARD_STUDY}/$studySetId")
+                    },
+                    onStartMatching = { matchingSetId ->
+                        navController.navigate("${Routes.MATCHING_STUDY}/$matchingSetId")
+                    },
+                    onStartMultipleChoice = { mcSetId ->
+                        navController.navigate("${Routes.MULTIPLE_CHOICE_STUDY}/$mcSetId")
                     }
                 )
             }
@@ -480,6 +734,56 @@ fun AppNavGraph(
                     setId = setId,
                     onBack = { navController.popBackStack() },
                     onPlayAudio = { word -> recordingManager.playAudioFromText(word) }
+                )
+            }
+
+            composable(
+                route = "${Routes.MATCHING_STUDY}/{setId}",
+                arguments = listOf(
+                    navArgument("setId") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val setId = backStackEntry.arguments?.getString("setId") ?: ""
+                MatchingStudyScreen(
+                    setId = setId,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = "${Routes.MULTIPLE_CHOICE_STUDY}/{setId}",
+                arguments = listOf(
+                    navArgument("setId") { type = NavType.StringType }
+                ),
+                enterTransition = {
+                    slideIntoContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeIn(animationSpec = tween(300))
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                        animationSpec = tween(300)
+                    ) + fadeOut(animationSpec = tween(300))
+                }
+            ) { backStackEntry ->
+                val setId = backStackEntry.arguments?.getString("setId") ?: ""
+                MultipleChoiceStudyScreen(
+                    setId = setId,
+                    onBack = { navController.popBackStack() }
                 )
             }
 

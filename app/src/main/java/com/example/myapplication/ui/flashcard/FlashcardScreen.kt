@@ -23,12 +23,18 @@ import com.example.myapplication.ui.theme.ButtonPrimary
 import com.example.myapplication.ui.theme.MainColor
 import com.example.myapplication.ui.theme.TextPrimary
 
+// Enum cho UI mode selection
+enum class UIMode {
+    FLASHCARD, VIDEO
+}
+
 @Composable
 fun FlashcardScreen(
     onBack: () -> Unit,
     onNavItemSelected: (String) -> Unit,
     onCreateSet: () -> Unit,
-    onOpenSet: (String) -> Unit
+    onOpenSet: (String) -> Unit,
+    onNavigateToVideoStudy: () -> Unit = {}
 ) {
     val context = LocalContext.current
     // Quay về cách khởi tạo ViewModel đơn giản ban đầu
@@ -87,75 +93,55 @@ fun FlashcardScreen(
             )
             
             Text(
-                text = "Flashcards",
-                fontSize = 36.sp, // Size giống History
+                text = "Learning",
+                fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
             Text(
-                text = "Tạo và học từ vựng với thẻ ghi nhớ",
+                text = "Chọn phương thức ôn tập",
                 fontSize = 18.sp,
                 color = TextPrimary,
-                modifier = Modifier.padding(bottom = 24.dp)
+                modifier = Modifier.padding(bottom = 20.dp)
             )
 
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (flashcardSets.isEmpty()) {
-                // EMPTY STATE theo pattern của VisionaryWords
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        "Chưa có bộ flashcard nào",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimary,  // Thay Color.Black
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
-                    
-                    Button(
-                        onClick = { showCreateDialog = true },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = ButtonPrimary  // Thay Color(0xFFE48ED4)
-                        ),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Tạo bộ flashcard đầu tiên")
-                    }
-                }
-            } else {
-                // LIST các flashcard sets theo pattern History
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(flashcardSets) { set: FlashcardSet ->
-                        FlashcardSetCard(
-                            set = set,
-                            onClick = { onOpenSet(set.id) },
-                            onDelete = { viewModel.deleteFlashcardSet(set.id) }
-                        )
-                    }
-                    // Thêm item cuối cùng là một Spacer
-                    item {
-                        Spacer(modifier = Modifier.height(10.dp)) // Điều chỉnh giá trị này theo ý muốn
-                    }
-                }
+            // STUDY MODE SELECTION CARDS
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Card Flashcard - Hiển thị danh sách flashcard
+                StudyModeCard(
+                    title = "Danh sách từ vựng",
+                    icon = Icons.Default.Style,
+                    isSelected = false,
+                    onClick = { /* Hiển thị danh sách flashcard bên dưới */ },
+                    modifier = Modifier.weight(1f)
+                )
+                
+                // Card Video - Navigate đến screen video
+                StudyModeCard(
+                    title = "Học qua video",
+                    icon = Icons.Default.PlayCircle,
+                    isSelected = false,
+                    onClick = { onNavigateToVideoStudy() },
+                    modifier = Modifier.weight(1f)
+                )
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // FLASHCARD CONTENT - Luôn hiển thị danh sách flashcard
+            FlashcardContent(
+                flashcardSets = flashcardSets,
+                isLoading = isLoading,
+                onOpenSet = onOpenSet,
+                onDeleteSet = { viewModel.deleteFlashcardSet(it) }
+            )
         }
     }
 
@@ -174,6 +160,130 @@ fun FlashcardScreen(
     error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
             viewModel.clearError()
+        }
+    }
+}
+
+// STUDY MODE CARD - Card để chọn phương thức học
+@Composable
+fun StudyModeCard(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) ButtonPrimary else Color.White.copy(alpha = 0.9f)
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 8.dp else 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = if (isSelected) Color.White else ButtonPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isSelected) Color.White else TextPrimary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        }
+    }
+}
+
+// FLASHCARD CONTENT - Nội dung khi chọn danh sách từ vựng
+@Composable
+fun FlashcardContent(
+    flashcardSets: List<FlashcardSet>,
+    isLoading: Boolean,
+    onOpenSet: (String) -> Unit,
+    onDeleteSet: (String) -> Unit
+) {
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+    } else if (flashcardSets.isEmpty()) {
+        // EMPTY STATE
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White.copy(alpha = 0.9f)
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Icon(
+                        Icons.Default.Style,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = ButtonPrimary
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Chưa có bộ flashcard nào",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextPrimary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Tạo bộ flashcard đầu tiên để bắt đầu học từ vựng",
+                        fontSize = 14.sp,
+                        color = TextPrimary.copy(alpha = 0.7f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    )
+                }
+            }
+        }
+    } else {
+        // LIST các flashcard sets
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(flashcardSets) { set: FlashcardSet ->
+                FlashcardSetCard(
+                    set = set,
+                    onClick = { onOpenSet(set.id) },
+                    onDelete = { onDeleteSet(set.id) }
+                )
+            }
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
+            }
         }
     }
 }

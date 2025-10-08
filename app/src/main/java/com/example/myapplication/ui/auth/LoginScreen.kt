@@ -176,7 +176,7 @@ fun LoginScreen(
                     .height(56.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text(text = "Dùng offline", fontSize = 18.sp)
+                Text(text = "Dùng tài khoản khách", fontSize = 18.sp)
             }
 
             Text(
